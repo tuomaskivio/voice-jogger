@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">VoiceJogger</string>
+    <string name="text_record_status">VOICE JOGGER</string>
+    <string name="button_start">START</string>
+    <string name="button_stop">STOP</string>
+    <string name="textview_server_heading">Server details</string>
+    <string name="plaintext_port_hint">50001, 34403, etc.</string>
+    <string name="plaintext_ip_hint">192.168.1.222</string>
+    <string name="textview_port">Port:</string>
+    <string name="textview_ip">IP Address:</string>
+    <string name="textview_audio_heading">Audio details</string>
+    <string name="textview_rate">Sampling Rate:</string>
+    <string name="edittext_rate_hint">16000/8000</string>
+</resources>
