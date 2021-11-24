@@ -2,6 +2,7 @@ from word2number import w2n
 
 
 def get_move_command(words):
+    print(words)
     try:
         if len(words) < 2:
             return None
@@ -29,6 +30,7 @@ def get_move_command(words):
         
         
 def get_start_command(words):
+    print(words)
     try:
         if len(words) != 1:
             return None
@@ -62,10 +64,14 @@ def get_stop_command(words):
     
 CMD_ARGS_LOOKUP_TABLE = {
 'start' : 'START',
+'star' : 'START',
+'stat' : 'START',
 'stop' : 'STOP',
 'panda': 'PANDA',
+'ponder' : 'PANDA',
 'move' : 'MOVE',
 'moved' : 'MOVE',
+'more' : 'MOVE',
 'go' : 'MOVE',
 'up' : 'UP',
 'down' : 'DOWN',
