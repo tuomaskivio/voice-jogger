@@ -87,6 +87,7 @@ CMD_ARGS_LOOKUP_TABLE = {
 'back': 'BACKWARD',
 'for' : 'four',
 'to' : 'two',
+'then' : 'ten'
 }
 
 
