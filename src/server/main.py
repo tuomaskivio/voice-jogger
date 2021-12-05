@@ -34,7 +34,6 @@ try:
         data = q.get()
         # mode: step mode. Faster response time, because in the direction and distance mode distance needs to be recognized.
         
-        #if False:
         words = rec.speech_to_text(data)
         if len(words) > 1:
             print(words)
