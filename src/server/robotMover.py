@@ -54,9 +54,30 @@ class RobotMover(object):
 		self.move_group = move_group
 		self.step_size = 0.05
 		self.mode = 'STEP' # step, distance
+		self.position1 = None
+		self.position2 = None
+
+	def move_robot_to_position(self, position):
+		if position == '1':
+			target = self.position1
+		elif position == '2':
+			target = self.position2
+		else:
+			rospy.loginfo("Command not found.")
+			return
+
+		# If there isn't saved position, dont't do nothing but inform user
+		if target != None:
+			rospy.loginfo("Robot moved to position " + position)
+			waypoints = []
+			waypoints.append(copy.deepcopy(target))
+			(plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+			self.move_group.execute(plan, wait=True)
+		else:
+			rospy.loginfo("Position " + position + " not saved.")
 
 
-	def step_mode(self, direction, stepSize):
+	def move_robot_cartesian(self, direction, stepSize):
 		rospy.loginfo("Mode: " + self.mode + " " + direction + " " + str(stepSize) + " m")
 
 		waypoints = []
@@ -99,17 +120,22 @@ class RobotMover(object):
 				stepSize = int(cmd[2]) / 100
 
 			if cmd[1] == "UP":
-				self.step_mode("up", stepSize)
+				self.move_robot_cartesian("up", stepSize)
 			elif cmd[1] == "DOWN":
-				self.step_mode("down", stepSize)
+				self.move_robot_cartesian("down", stepSize)
 			elif cmd[1] == "LEFT":
-				self.step_mode("left", stepSize)
+				self.move_robot_cartesian("left", stepSize)
 			elif cmd[1] == "RIGHT":
-				self.step_mode("right", stepSize)
+				self.move_robot_cartesian("right", stepSize)
 			elif cmd[1] == "FORWARD":
-				self.step_mode("forward", stepSize)
+				self.move_robot_cartesian("forward", stepSize)
 			elif cmd[1] == "BACKWARD":
-				self.step_mode("backward", stepSize)
+				self.move_robot_cartesian("backward", stepSize)
+
+			elif cmd[1] == 'POSITION': # move robot to saved position
+				self.move_robot_to_position(cmd[2])
+
+
 			else:
 				rospy.loginfo("Command not found.")
 
@@ -140,8 +166,25 @@ class RobotMover(object):
 			else:
 				rospy.loginfo("Command not found.")
 
+
+		#________________SAVE ROBOT POSITION_____________________
+		elif cmd[0] == 'SAVE' and cmd[1] == 'POSITION':
+			if cmd[2] == '1':
+				self.position1 = robot_pose = self.move_group.get_current_pose().pose
+				rospy.loginfo("Robot position 1 saved.")
+			elif cmd[2] == '2':
+				self.position2 = robot_pose = self.move_group.get_current_pose().pose
+				rospy.loginfo("Robot position 2 saved.")
+			else:
+				rospy.loginfo("Command not found.")
+
+
+
 		else:
 			rospy.loginfo("Command not found.")
+
+
+
 
 
 def main():
