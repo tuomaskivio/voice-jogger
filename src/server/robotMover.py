@@ -27,7 +27,7 @@ class RobotMover(object):
 		# for getting, setting, and updating the robot's internal understanding of the
 		# surrounding world:
 		scene = moveit_commander.PlanningSceneInterface()
-
+        
 		# Instantiate a  MoveGroupCommander object.  This object is an interface
 		# to a planning group (group of joints).  In this tutorial the group is the primary
 		# arm joints in the Panda robot, so we set the group's name to "panda_arm".
@@ -36,27 +36,31 @@ class RobotMover(object):
 		# This interface can be used to plan and execute motions:
 		group_name = "panda_arm"
 		move_group = moveit_commander.MoveGroupCommander(group_name)
-
+		
+		group_name = "panda_arm_hand"
+		move_group_gripper = moveit_commander.MoveGroupCommander(group_name)
+        
 		# Create a `DisplayTrajectory`_ ROS publisher which is used to display
 		# trajectories in Rviz:
 		display_trajectory_publisher = rospy.Publisher(
-		    "/move_group/display_planned_path",
-		    moveit_msgs.msg.DisplayTrajectory,
-		    queue_size=20,
+				"/move_group/display_planned_path",
+			moveit_msgs.msg.DisplayTrajectory,
+			queue_size=20,
 		)
-
+        
 		# Subscriber for text commands
 		text_command_subscriber = rospy.Subscriber("/text_commands", String, self.handle_received_command)
-
+        
 		# class variables
 		self.robot = robot
 		self.scene = scene
 		self.move_group = move_group
+		self.move_group_gripper = move_group_gripper
 		self.step_size = 0.05
 		self.mode = 'STEP' # step, distance
 		self.position1 = None
 		self.position2 = None
-
+        
 	def move_robot_to_position(self, position):
 		if position == '1':
 			target = self.position1
@@ -65,7 +69,7 @@ class RobotMover(object):
 		else:
 			rospy.loginfo("Command not found.")
 			return
-
+        
 		# If there isn't saved position, dont't do nothing but inform user
 		if target != None:
 			rospy.loginfo("Robot moved to position " + position)
@@ -75,49 +79,57 @@ class RobotMover(object):
 			self.move_group.execute(plan, wait=True)
 		else:
 			rospy.loginfo("Position " + position + " not saved.")
-
-
+            
 	def move_robot_cartesian(self, direction, stepSize):
 		rospy.loginfo("Mode: " + self.mode + " " + direction + " " + str(stepSize) + " m")
-
+        
 		waypoints = []
-
 		robot_pose = self.move_group.get_current_pose().pose
-
+		
 		if direction == "up":
 			robot_pose.position.z += stepSize
-			waypoints.append(copy.deepcopy(robot_pose))
 		if direction == "down":
 			robot_pose.position.z -= stepSize
-			waypoints.append(copy.deepcopy(robot_pose))
 		if direction == "left":
 			robot_pose.position.y -= stepSize
-			waypoints.append(copy.deepcopy(robot_pose))
 		if direction == "right":
 			robot_pose.position.y += stepSize
-			waypoints.append(copy.deepcopy(robot_pose))
 		if direction == "forward":
 			robot_pose.position.x += stepSize
-			waypoints.append(copy.deepcopy(robot_pose))
 		if direction == "backward":
 			robot_pose.position.x -= stepSize
-			waypoints.append(copy.deepcopy(robot_pose))
-
+			
+		waypoints.append(copy.deepcopy(robot_pose))
 		(plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
 		self.move_group.execute(plan, wait=True)
-
-
+        
+        
+	def set_gripper(self, state):
+		rospy.loginfo("Set gripper to %s", state)
+		joint_goal = self.move_group_gripper.get_current_joint_values()
+		
+		if state == 1:
+			joint_goal[7] = 0.0
+			joint_goal[8] = 0.0
+		else:
+			joint_goal[7] = 0.04
+			joint_goal[8] = 0.04
+            
+		self.move_group_gripper.go(joint_goal, wait=True)
+		self.move_group_gripper.stop()
+        
+        
 	def handle_received_command(self, command):
 		cmd = command.data.split(' ')
-
-		#________________MOVE COMMANDS___________________________
+        
+        #________________MOVE COMMANDS___________________________
 		if cmd[0] == "MOVE":
 
 			# step size depend on mode
 			if self.mode == 'STEP':
 				stepSize = self.step_size
 			if self.mode == 'DISTANCE':
-				stepSize = int(cmd[2]) / 100
+				stepSize = float(cmd[2]) / 100
 
 			if cmd[1] == "UP":
 				self.move_robot_cartesian("up", stepSize)
@@ -138,8 +150,14 @@ class RobotMover(object):
 
 			else:
 				rospy.loginfo("Command not found.")
-
-
+        
+        #________________GRIPPER COMMANDS_________________________
+		elif cmd[0] == "GRIPPER" or cmd[0] == "TOOL":
+			if cmd[1] == "OPEN":
+				self.set_gripper(0)
+			elif cmd[1] == "CLOSE":
+				self.set_gripper(1)
+        
 		#________________CHANGE MODE_____________________________
 		elif cmd[0] == "MODE":
 			if cmd[1] == "STEP":
@@ -179,7 +197,6 @@ class RobotMover(object):
 				rospy.loginfo("Command not found.")
 
 
-
 		else:
 			rospy.loginfo("Command not found.")
 
@@ -188,9 +205,9 @@ class RobotMover(object):
 
 
 def main():
-    robotMover = RobotMover()
-    rospy.loginfo("RobotMover node started.")
-    rospy.spin()
+	robotMover = RobotMover()
+	rospy.loginfo("RobotMover node started.")
+	rospy.spin()
 
 if __name__ == "__main__":
     main()

@@ -50,7 +50,17 @@ class CommandCreator(object):
 			'hi' : 'HIGH',
 			'size' : 'SIZE',
 			'sized' : 'SIZE',
-			'ice' : 'SIZE'
+			'ice' : 'SIZE',
+			'tool' : 'TOOL',
+            'door' : 'TOOL',
+            'dual' : 'TOOL',
+            'tall' : 'TOOL',
+            'all' : 'TOOL',
+            'whole' : 'TOOL',
+			'open' : 'OPEN',
+			'close' : 'CLOSE',
+            'glass' : 'CLOSE',
+			'gloves' : 'CLOSE'
 		}
 
 
@@ -72,6 +82,8 @@ class CommandCreator(object):
 			return self.change_mode(words)
 		elif command == "STEP":
 			return self.change_step_size(words)
+		elif command == "TOOL":
+			return self.get_tool_command(words)
 		else:
 			return None
 
@@ -184,6 +196,22 @@ class CommandCreator(object):
 		except Exception as e:
 			print('Invalid step size change. ', e)
 			return None
-
+        
+	def get_tool_command(self, words):
+		try:
+			if len(words) != 1:
+				return None
+			word = words.pop(0)
+			tool_state = self.all_words_lookup_table.get(word, '')
+			if tool_state not in ['OPEN', 'CLOSE']:
+				raise ValueError('Command: ', tool_state, 
+					 ' not valid command for gripper tool. Valid commands are'
+					  ' OPEN and CLOSE.')
+            
+			return ['TOOL', tool_state]
+        
+		except Exception as e:
+			print('Invalid tool command. ', e)
+			return None
 
 		

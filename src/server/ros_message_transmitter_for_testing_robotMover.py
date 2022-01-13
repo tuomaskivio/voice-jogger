@@ -21,6 +21,9 @@ if __name__== '__main__':
 	print("Change mode:")
 	print("MODE STEP/DISTANCE")
 	print("")
+	print("Control gripper:")
+	print("GRIPPER OPEN/CLOSE")
+	print("")
 	
 
 	while not rospy.is_shutdown():
