@@ -73,6 +73,8 @@ class CommandCreator(object):
 			return self.get_start_command(words)
 		elif command == "STOP":
 			return self.get_stop_command(words)
+		elif command == "HOME":
+			return "HOME"
 		elif command == "MOVE":
 			if self.mode == 'STEP':
 				return self.get_move_command_step_mode(words)

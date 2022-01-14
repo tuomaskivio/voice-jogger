@@ -61,6 +61,21 @@ class RobotMover(object):
 		self.position1 = None
 		self.position2 = None
         
+		
+	def move_robot_home(self):
+		pose = geometry_msgs.msg.Pose()
+		pose.position.x = 0.3
+		pose.position.y = 0
+		pose.position.z = 0.6
+		pose.orientation.x = 1
+		pose.orientation.y = -0.383
+		pose.orientation.z = 0
+		pose.orientation.w = 0
+		
+		(plan, fraction) = self.move_group.compute_cartesian_path([pose], 0.01, 0.0)  # jump_threshold
+		self.move_group.execute(plan, wait=True)
+	
+		
 	def move_robot_to_position(self, position):
 		if position == '1':
 			target = self.position1
@@ -80,6 +95,7 @@ class RobotMover(object):
 		else:
 			rospy.loginfo("Position " + position + " not saved.")
             
+			
 	def move_robot_cartesian(self, direction, stepSize):
 		rospy.loginfo("Mode: " + self.mode + " " + direction + " " + str(stepSize) + " m")
         
@@ -123,7 +139,10 @@ class RobotMover(object):
 		cmd = command.data.split(' ')
         
         #________________MOVE COMMANDS___________________________
-		if cmd[0] == "MOVE":
+		if cmd[0] == "HOME":
+			self.move_robot_home()
+		
+		elif cmd[0] == "MOVE":
 
 			# step size depend on mode
 			if self.mode == 'STEP':

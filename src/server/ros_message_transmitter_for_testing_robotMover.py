@@ -9,6 +9,9 @@ if __name__== '__main__':
 	pub = rospy.Publisher("/text_commands", String, queue_size=10) # queue_size gives time for subscriber to process data it gets
 	
 	print("Give capitalized commands:")
+	print("Go to home position: ")
+	print("HOME")
+	print("")
 	print("Stepping mode: ")
 	print("MOVE UP, DOWN, LEFT, RIGHT, FORWARD, BACKWARD")
 	print("")
