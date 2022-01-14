@@ -120,16 +120,12 @@ class RobotMover(object):
 		self.move_group.execute(plan, wait=True)
         
         
-	def set_gripper(self, state):
-		rospy.loginfo("Set gripper to %s", state)
+	def set_gripper(self, distance):
+		rospy.loginfo("Set gripper to %s mm", distance*1000)
 		joint_goal = self.move_group_gripper.get_current_joint_values()
 		
-		if state == 1:
-			joint_goal[7] = 0.0
-			joint_goal[8] = 0.0
-		else:
-			joint_goal[7] = 0.04
-			joint_goal[8] = 0.04
+		joint_goal[7] = distance/2
+		joint_goal[8] = distance/2
             
 		self.move_group_gripper.go(joint_goal, wait=True)
 		self.move_group_gripper.stop()
@@ -172,10 +168,18 @@ class RobotMover(object):
         
         #________________GRIPPER COMMANDS_________________________
 		elif cmd[0] == "GRIPPER" or cmd[0] == "TOOL":
-			if cmd[1] == "OPEN":
-				self.set_gripper(0)
-			elif cmd[1] == "CLOSE":
-				self.set_gripper(1)
+			if len(cmd) == 2:
+				if cmd[1] == "OPEN":
+					self.set_gripper(0.08)
+				elif cmd[1] == "CLOSE":
+					self.set_gripper(0)
+				else:
+					try:
+						distance = float(cmd[1]) / 1000
+						self.set_gripper(distance)
+					except ValueError:
+						rospy.loginfo('Invalid gripper command "%s" received, available commands are:', cmd[1])
+						rospy.loginfo('OPEN, CLOSE, or distance between fingers in units mm between 0-80')
         
 		#________________CHANGE MODE_____________________________
 		elif cmd[0] == "MODE":

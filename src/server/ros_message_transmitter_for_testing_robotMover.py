@@ -25,7 +25,7 @@ if __name__== '__main__':
 	print("MODE STEP/DISTANCE")
 	print("")
 	print("Control gripper:")
-	print("GRIPPER OPEN/CLOSE")
+	print("GRIPPER OPEN/CLOSE/[0 - 80]")
 	print("")
 	
 
