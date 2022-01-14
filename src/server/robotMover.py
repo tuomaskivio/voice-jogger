@@ -165,6 +165,22 @@ class RobotMover(object):
 
 			else:
 				rospy.loginfo("Command not found.")
+		
+		elif cmd[0] == "UP":
+			self.move_robot_cartesian("up", self.step_size)
+		elif cmd[0] == "DOWN":
+			self.move_robot_cartesian("down", self.step_size)
+		elif cmd[0] == "LEFT":
+			self.move_robot_cartesian("left", self.step_size)
+		elif cmd[0] == "RIGHT":
+			self.move_robot_cartesian("right", self.step_size)
+		elif cmd[0] == "FORWARD":
+			self.move_robot_cartesian("forward", self.step_size)
+		elif cmd[0] == "BACKWARD":
+			self.move_robot_cartesian("backward", self.step_size)
+			
+		elif cmd[0] == 'POSITION': # move robot to saved position
+			self.move_robot_to_position(cmd[1])
         
         #________________GRIPPER COMMANDS_________________________
 		elif cmd[0] == "GRIPPER" or cmd[0] == "TOOL":
@@ -180,6 +196,11 @@ class RobotMover(object):
 					except ValueError:
 						rospy.loginfo('Invalid gripper command "%s" received, available commands are:', cmd[1])
 						rospy.loginfo('OPEN, CLOSE, or distance between fingers in units mm between 0-80')
+						
+		elif cmd[0] == "OPEN":
+			self.set_gripper(0.08)
+		elif cmd[0] == "CLOSE" or "GRASP":
+			self.set_gripper(0)
         
 		#________________CHANGE MODE_____________________________
 		elif cmd[0] == "MODE":
