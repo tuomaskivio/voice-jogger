@@ -60,6 +60,8 @@ class RobotMover(object):
 		self.mode = 'STEP' # step, distance
 		self.position1 = None
 		self.position2 = None
+		self.recording_task_name = None
+		self.saved_tasks = {}
         
 		
 	def move_robot_home(self):
@@ -68,9 +70,9 @@ class RobotMover(object):
 		pose.position.y = 0
 		pose.position.z = 0.6
 		pose.orientation.x = 1
-		pose.orientation.y = -0.383
+		pose.orientation.y = -0.43
 		pose.orientation.z = 0
-		pose.orientation.w = 0
+		pose.orientation.w = -0.01
 		
 		(plan, fraction) = self.move_group.compute_cartesian_path([pose], 0.01, 0.0)  # jump_threshold
 		self.move_group.execute(plan, wait=True)
@@ -132,7 +134,20 @@ class RobotMover(object):
         
         
 	def handle_received_command(self, command):
-		cmd = command.data.split(' ')
+		if type(command) == String:
+			cmd = command.data.split(' ')
+		elif type(command) == list:
+			cmd = command
+			
+		if self.recording_task_name is not None:
+			if cmd[0] == "FINISH":
+				rospy.loginfo("Finished recording task with name %s", self.recording_task_name)
+				self.recording_task_name = None
+			elif cmd[0] == "RECORD":
+				pass
+			else:
+				self.saved_tasks[self.recording_task_name].append(cmd)
+		print("saved tasks dict so far:", self.saved_tasks)
         
         #________________MOVE COMMANDS___________________________
 		if cmd[0] == "HOME":
@@ -199,7 +214,8 @@ class RobotMover(object):
 						
 		elif cmd[0] == "OPEN":
 			self.set_gripper(0.08)
-		elif cmd[0] == "CLOSE" or "GRASP":
+		elif cmd[0] == ("CLOSE" or "GRASP"):
+			print(cmd)
 			self.set_gripper(0)
         
 		#________________CHANGE MODE_____________________________
@@ -239,12 +255,23 @@ class RobotMover(object):
 				rospy.loginfo("Robot position 2 saved.")
 			else:
 				rospy.loginfo("Command not found.")
-
-
+			
+			
+		#___________________TASK RECORDINGS______________________
+		elif cmd[0] == 'RECORD':
+			rospy.loginfo("Begin recording task with name %s", cmd[1])
+			self.recording_task_name = cmd[1]
+			if self.recording_task_name not in self.saved_tasks.keys():
+				self.saved_tasks[self.recording_task_name] = []
+				
+		elif cmd[0] in self.saved_tasks.keys():
+			for step in self.saved_tasks[cmd[0]]:
+				print("calling handle received command with params", step)
+				self.handle_received_command(step)
+				
+		
 		else:
 			rospy.loginfo("Command not found.")
-
-
 
 
 
