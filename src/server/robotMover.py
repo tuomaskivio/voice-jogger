@@ -139,6 +139,8 @@ class RobotMover(object):
 		elif type(command) == list:
 			cmd = command
 			
+#		print("saved tasks so far:", self.saved_tasks)
+			
 		if self.recording_task_name is not None:
 			if cmd[0] == "FINISH":
 				rospy.loginfo("Finished recording task with name %s", self.recording_task_name)
@@ -146,8 +148,7 @@ class RobotMover(object):
 			elif cmd[0] == "RECORD":
 				pass
 			else:
-				self.saved_tasks[self.recording_task_name].append(cmd)
-		print("saved tasks dict so far:", self.saved_tasks)
+				self.saved_tasks[self.recording_task_name]["moves"].append(cmd)
         
         #________________MOVE COMMANDS___________________________
 		if cmd[0] == "HOME":
@@ -262,12 +263,22 @@ class RobotMover(object):
 			rospy.loginfo("Begin recording task with name %s", cmd[1])
 			self.recording_task_name = cmd[1]
 			if self.recording_task_name not in self.saved_tasks.keys():
-				self.saved_tasks[self.recording_task_name] = []
+				self.saved_tasks[self.recording_task_name] = {}
+				self.saved_tasks[self.recording_task_name]["start_step_size"] = self.step_size
+				start_pose = copy.deepcopy(self.move_group.get_current_pose().pose)
+				self.saved_tasks[self.recording_task_name]["start_pose"] = start_pose
+				self.saved_tasks[self.recording_task_name]["moves"] = []
 				
 		elif cmd[0] in self.saved_tasks.keys():
-			for step in self.saved_tasks[cmd[0]]:
+			step_size_before_task = self.step_size
+			self.step_size = self.saved_tasks[cmd[0]]["start_step_size"]
+			start_pose = self.saved_tasks[cmd[0]]["start_pose"]
+			(plan, fraction) = self.move_group.compute_cartesian_path([start_pose], 0.01, 0.0)
+			self.move_group.execute(plan, wait=True)
+			for step in self.saved_tasks[cmd[0]]["moves"]:
 				print("calling handle received command with params", step)
 				self.handle_received_command(step)
+			self.step_size = step_size_before_task
 				
 		
 		else:
