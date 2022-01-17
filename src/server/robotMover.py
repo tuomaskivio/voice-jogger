@@ -10,6 +10,7 @@ import geometry_msgs.msg
 from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
+import textFileHandler as tfh
 
 class RobotMover(object):
 	def __init__(self):
@@ -61,8 +62,7 @@ class RobotMover(object):
 		self.position1 = None
 		self.position2 = None
 		self.recording_task_name = None
-		self.saved_tasks = {}
-        
+		self.saved_tasks = tfh.load()
 		
 	def move_robot_home(self):
 		pose = geometry_msgs.msg.Pose()
@@ -144,6 +144,12 @@ class RobotMover(object):
 		if self.recording_task_name is not None:
 			if cmd[0] == "FINISH":
 				rospy.loginfo("Finished recording task with name %s", self.recording_task_name)
+
+				# Write tasks to text file
+				tfh.write(self.saved_tasks)
+				# Load tasks from text file. 
+				self.saved_tasks = tfh.load()
+
 				self.recording_task_name = None
 			elif cmd[0] == "RECORD":
 				pass
@@ -268,7 +274,7 @@ class RobotMover(object):
 				start_pose = copy.deepcopy(self.move_group.get_current_pose().pose)
 				self.saved_tasks[self.recording_task_name]["start_pose"] = start_pose
 				self.saved_tasks[self.recording_task_name]["moves"] = []
-				
+		
 		elif cmd[0] in self.saved_tasks.keys():
 			step_size_before_task = self.step_size
 			self.step_size = self.saved_tasks[cmd[0]]["start_step_size"]
@@ -279,6 +285,29 @@ class RobotMover(object):
 				print("calling handle received command with params", step)
 				self.handle_received_command(step)
 			self.step_size = step_size_before_task
+
+
+		#___________________TEXT FILE HANDLING______________________
+		elif cmd[0] == 'LIST' and cmd[1] == 'TASKS':
+			print("")
+			print("Saved tasks:")
+			print("")
+			for taskname in self.saved_tasks:
+				print(taskname)	
+			print("")
+
+		elif cmd[0] == 'REMOVE':
+			if len(cmd) < 2:
+				print("REMOVE error: give task name.")
+			elif len(cmd) > 2:
+				print("REMOVE error: Too many arguments.")
+			else:
+				if cmd[1] in self.saved_tasks.keys():
+					tfh.deleteItem(cmd[1])
+					self.saved_tasks = tfh.load()
+					print("Task " + cmd[1] + " removed.")
+				else:
+					print("REMOVE error: No task named " + cmd[1] + " found. Use LIST TASK command too see tasks.")
 				
 		
 		else:
