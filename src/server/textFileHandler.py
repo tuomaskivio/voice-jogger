@@ -3,7 +3,7 @@
 import json
 from rospy_message_converter import message_converter
 
-def write(data):
+def write_task(data):
 	for taskname in data:
 		for dataName in data[taskname]:
 			# Originally type of start_pose is ros message: geometry_msgs/Pose
@@ -21,7 +21,7 @@ def write(data):
 	textfile.write(dataJSON)
 
 
-def load():
+def load_task():
 	# Open file
 	textfile = open("tasks.txt", "r")
 	dataJSON = textfile.read()
@@ -37,10 +37,31 @@ def load():
 	return data
 
 
-def deleteItem(name):
-	data = load()
+def write_position(data):
+	for posename in data:
+		pose = message_converter.convert_ros_message_to_dictionary(data[posename])
+		data[posename] = pose
+		
+	dataJSON = json.dumps(data, indent=4)
+	textfile = open("positions.txt", "w")
+	textfile.write(dataJSON)
+	
+	
+def load_position():
+	textfile = open("positions.txt", "r")
+	dataJSON = textfile.read()
+	data = json.loads(dataJSON)
+	
+	for posename in data:
+		pose = message_converter.convert_dictionary_to_ros_message('geometry_msgs/Pose', data[posename])
+		data[posename] = pose
+	return data
+	
+
+def deleteItem(filename, name):
+	data = load(filename)
 	data.pop(name)
-	write(data)
+	write(filename, data)
 
 
 

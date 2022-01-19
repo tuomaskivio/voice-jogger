@@ -7,9 +7,12 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
+import pickle
+
 from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
+
 import textFileHandler as tfh
 
 class RobotMover(object):
@@ -62,7 +65,10 @@ class RobotMover(object):
 		self.position1 = None
 		self.position2 = None
 		self.recording_task_name = None
-		self.saved_tasks = tfh.load()
+		self.saved_positions = tfh.load_position()
+#		self.saved_positions = {}
+		self.saved_tasks = tfh.load_task()
+		
 		
 	def move_robot_home(self):
 		pose = geometry_msgs.msg.Pose()
@@ -79,13 +85,7 @@ class RobotMover(object):
 	
 		
 	def move_robot_to_position(self, position):
-		if position == '1':
-			target = self.position1
-		elif position == '2':
-			target = self.position2
-		else:
-			rospy.loginfo("Command not found.")
-			return
+		target = self.saved_positions[position]
         
 		# If there isn't saved position, dont't do nothing but inform user
 		if target != None:
@@ -139,16 +139,14 @@ class RobotMover(object):
 		elif type(command) == list:
 			cmd = command
 			
-#		print("saved tasks so far:", self.saved_tasks)
-			
 		if self.recording_task_name is not None:
 			if cmd[0] == "FINISH":
 				rospy.loginfo("Finished recording task with name %s", self.recording_task_name)
 
 				# Write tasks to text file
-				tfh.write(self.saved_tasks)
+				tfh.write_task(self.saved_tasks)
 				# Load tasks from text file. 
-				self.saved_tasks = tfh.load()
+				self.saved_tasks = tfh.load_task()
 
 				self.recording_task_name = None
 			elif cmd[0] == "RECORD":
@@ -254,14 +252,11 @@ class RobotMover(object):
 
 		#________________SAVE ROBOT POSITION_____________________
 		elif cmd[0] == 'SAVE' and cmd[1] == 'POSITION':
-			if cmd[2] == '1':
-				self.position1 = robot_pose = self.move_group.get_current_pose().pose
-				rospy.loginfo("Robot position 1 saved.")
-			elif cmd[2] == '2':
-				self.position2 = robot_pose = self.move_group.get_current_pose().pose
-				rospy.loginfo("Robot position 2 saved.")
-			else:
-				rospy.loginfo("Command not found.")
+			if cmd[2] in self.saved_positions.keys():
+				rospy.loginfo("There was already a stored position with the name %s so it was overwritten", cmd[2])
+			self.saved_positions[cmd[2]] = self.move_group.get_current_pose().pose
+			tfh.write_position(self.saved_positions)
+			self.saved_positions = tfh.load_position()
 			
 			
 		#___________________TASK RECORDINGS______________________
@@ -303,8 +298,8 @@ class RobotMover(object):
 				print("REMOVE error: Too many arguments.")
 			else:
 				if cmd[1] in self.saved_tasks.keys():
-					tfh.deleteItem(cmd[1])
-					self.saved_tasks = tfh.load()
+					tfh.deleteItem("tasks.txt", cmd[1])
+					self.saved_tasks = tfh.load_task()
 					print("Task " + cmd[1] + " removed.")
 				else:
 					print("REMOVE error: No task named " + cmd[1] + " found. Use LIST TASK command too see tasks.")
