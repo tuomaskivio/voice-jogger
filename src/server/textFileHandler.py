@@ -59,9 +59,15 @@ def load_position():
 	
 
 def deleteItem(filename, name):
-	data = load(filename)
-	data.pop(name)
-	write(filename, data)
+	if filename == "positions.txt":
+		data = load_position()
+		data.pop(name)
+		write_position(data)
+		
+	else:
+		data = load_task()
+		data.pop(name)
+		write_task(data)
 
 
 

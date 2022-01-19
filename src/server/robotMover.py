@@ -66,7 +66,6 @@ class RobotMover(object):
 		self.position2 = None
 		self.recording_task_name = None
 		self.saved_positions = tfh.load_position()
-#		self.saved_positions = {}
 		self.saved_tasks = tfh.load_task()
 		
 		
@@ -257,6 +256,15 @@ class RobotMover(object):
 			self.saved_positions[cmd[2]] = self.move_group.get_current_pose().pose
 			tfh.write_position(self.saved_positions)
 			self.saved_positions = tfh.load_position()
+			
+			
+		#_______________REMOVE ROBOT POSITION____________________
+		elif cmd[0] == 'REMOVE' and cmd[1] == 'POSITION':
+			if cmd[2] in self.saved_positions.keys():
+				tfh.deleteItem('positions.txt', cmd[2])
+				self.saved_positions = tfh.load_position()
+			else:
+				rospy.loginfo("Not enough arguments, expected REMOVE POSITION [position name]")
 			
 			
 		#___________________TASK RECORDINGS______________________
