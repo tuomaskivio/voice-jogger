@@ -310,14 +310,17 @@ class RobotMover(object):
 			
 		#___________________TASK RECORDINGS______________________
 		elif cmd[0] == 'RECORD':
-			rospy.loginfo("Begin recording task with name %s", cmd[1])
-			self.recording_task_name = cmd[1]
-			if self.recording_task_name not in self.saved_tasks.keys():
-				self.saved_tasks[self.recording_task_name] = {}
-				self.saved_tasks[self.recording_task_name]["start_step_size"] = self.step_size
-				start_pose = copy.deepcopy(self.move_group.get_current_pose().pose)
-				self.saved_tasks[self.recording_task_name]["start_pose"] = start_pose
-				self.saved_tasks[self.recording_task_name]["moves"] = []
+			if len(cmd) > 1:
+				rospy.loginfo("Begin recording task with name %s", cmd[1])
+				self.recording_task_name = cmd[1]
+				if self.recording_task_name not in self.saved_tasks.keys():
+					self.saved_tasks[self.recording_task_name] = {}
+					self.saved_tasks[self.recording_task_name]["start_step_size"] = self.step_size
+					start_pose = copy.deepcopy(self.move_group.get_current_pose().pose)
+					self.saved_tasks[self.recording_task_name]["start_pose"] = start_pose
+					self.saved_tasks[self.recording_task_name]["moves"] = []
+			else:
+				print("RECORD error: give task name.")
 		
 		elif cmd[0] in self.saved_tasks.keys():
 			step_size_before_task = self.step_size

@@ -4,7 +4,7 @@ import rospy
 from std_msgs.msg import String
 
 if __name__== '__main__':
-	rospy.init_node('text_command_transmitter')
+	rospy.init_node('text_command_transmitter2')
 
 	pub = rospy.Publisher("/text_commands", String, queue_size=10) # queue_size gives time for subscriber to process data it gets
 	

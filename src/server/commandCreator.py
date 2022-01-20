@@ -76,7 +76,8 @@ class CommandCreator(object):
 			'task' : 'TASK',
 			'tasks' : 'TASK',
 			'desk' : 'TASK',
-			'remove' : 'REMOVE',
+			'dusk' : 'TASK',
+ 			'remove' : 'REMOVE',
 			'delete' : 'DELETE',
 			'daily' : 'DELETE',
 			'home' : 'HOME',
@@ -128,11 +129,23 @@ class CommandCreator(object):
 				else:
 					return ['LIST', 'TASKS']
 
-		#___________________REMOVE TASKNAME______________________
-		elif command == "REMOVE" or command == 'DELETE': 
-			if len(words) < 2:
-				return None
-			# TODO
+		#___________________REMOVE/DELETE TASKNAME______________________
+		elif command == "REMOVE" or command == 'DELETE':
+			if len(words) == 1:
+				return ['REMOVE', words[0].upper()]
+			elif len(words) > 1:
+				task_name = words.pop(0).upper()
+				# Check does task_name has number
+				number = self.get_number(words)
+				if number is None:
+					print('Invalid ' + command + task_name, " ", words,  ' command. Correct form: REMOVE/DELETE TASKNAME.')
+					return None
+				else:
+					task_name = task_name + str(number)
+					return ['REMOVE', task_name]
+			else:
+				print('Invalid ' + command + ' command. Correct form: REMOVE/DELETE TASKNAME.')
+
 			
 		elif type(command) == str:
 			cmd = [command]
@@ -180,14 +193,7 @@ class CommandCreator(object):
 	        if direction not in ['UP', 'DOWN', 'LEFT', 'RIGHT', 'FORWARD', 'BACKWARD']:
 	            raise ValueError('Invalid direction specified in move command')
 	        
-	        number_words = words.copy()
-	        # Replace words that sound like number with numbers
-	        for i,word in enumerate(words):
-	            new_word = self.all_words_lookup_table.get(word, None)
-	            if new_word:
-	                number_words[i] = new_word
-	                
-	        value = w2n.word_to_num(' '.join(number_words))
+	        value = self.get_number(words)
 	        if value is None:
 	            raise ValueError('Could not convert value to number in move command')
 	        
@@ -197,6 +203,22 @@ class CommandCreator(object):
 	        print('Invalid move command arguments received')
 	        print(e)
 	        return None
+
+	def get_number(self, words):
+		number_words = words.copy()
+		print("print numbers: ", number_words)
+		# Replace words that sound like number with numbers
+		for i,word in enumerate(words):
+			new_word = self.all_words_lookup_table.get(word, None)
+			if new_word:
+				number_words[i] = new_word
+		print("number_words: ", number_words)
+		try:
+			value = w2n.word_to_num(' '.join(number_words))
+			return value
+		except Exception as a:
+			print("Invalid number.")
+
 
 	def get_move_command_step_mode(self, words):
 		try:
