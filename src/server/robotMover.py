@@ -69,25 +69,29 @@ class RobotMover(object):
 		self.saved_tasks = tfh.load_task()
 		
 		
-	def move_robot_home(self):
+	def move_gripper_home(self):
 		pose = geometry_msgs.msg.Pose()
-		pose.position.x = 0.3
+		pose.position.x = 0.30701957
 		pose.position.y = 0
-		pose.position.z = 0.6
-		pose.orientation.x = 1
-		pose.orientation.y = -0.43
+		pose.position.z = 0.59026955
+		pose.orientation.x = 0.92395569
+		pose.orientation.y = -0.38249949
 		pose.orientation.z = 0
-		pose.orientation.w = -0.01
+		pose.orientation.w = 0
 		
 		(plan, fraction) = self.move_group.compute_cartesian_path([pose], 0.01, 0.0)  # jump_threshold
 		self.move_group.execute(plan, wait=True)
+
+
+	def move_robot_home(self):
+		self.move_group.go([0, -0.785, 0, -2.356, 0, 1.571, 0.785], wait=True)
+		self.move_group.stop()
 	
 		
 	def move_robot_to_position(self, position):
-		target = self.saved_positions[position]
-        
 		# If there isn't saved position, dont't do nothing but inform user
-		if target != None:
+		if position in self.saved_positions.keys():
+			target = self.saved_positions[position]
 			rospy.loginfo("Robot moved to position " + position)
 			waypoints = []
 			waypoints.append(copy.deepcopy(target))
@@ -130,6 +134,27 @@ class RobotMover(object):
             
 		self.move_group_gripper.go(joint_goal, wait=True)
 		self.move_group_gripper.stop()
+
+
+	def rotate_gripper(self, stepSize, clockwise = True):
+		# step size are: 0.01, 0.05, 0.1
+		# Increase rotating step size
+		stepSize = stepSize * 10
+		if not clockwise:
+			stepSize = stepSize * (-1)
+		joint_goal = self.move_group.get_current_joint_values()
+
+		# Joit 7 limits. max: 2.8973, min: -2.8973
+		if joint_goal[6] + stepSize >= 2.8973:
+			print("Joint 7 upper limit reached. Rotate counter-clockwise. Command: ROTATE BACK")
+		elif joint_goal[6] + stepSize <= -2.8973:
+			print("Joint 7 lower limit reached. Rotate clockwise. Command: ROTATE")
+		else:
+			joint_goal[6] = joint_goal[6] + stepSize
+			value2decimals = "{:.2f}".format(joint_goal[6])
+			rospy.loginfo("Gripper rotated. Joint 7 value: " + value2decimals + ". Max: 2.90, Min: -2.90.")
+			print(joint_goal[6])
+			self.move_group.go(joint_goal, wait=True)
         
         
 	def handle_received_command(self, command):
@@ -208,19 +233,35 @@ class RobotMover(object):
 					self.set_gripper(0.08)
 				elif cmd[1] == "CLOSE":
 					self.set_gripper(0)
+				elif cmd[1] == "ROTATE" or cmd[1] == "TURN" or cmd[1] == "SPIN":
+					self.rotate_gripper(self.step_size)
+				elif cmd[1] == "HOME":
+					self.move_gripper_home()
 				else:
 					try:
 						distance = float(cmd[1]) / 1000
 						self.set_gripper(distance)
 					except ValueError:
 						rospy.loginfo('Invalid gripper command "%s" received, available commands are:', cmd[1])
-						rospy.loginfo('OPEN, CLOSE, or distance between fingers in units mm between 0-80')
+						rospy.loginfo('OPEN, CLOSE, ROTATE or distance between fingers in units mm between 0-80')
+			if len(cmd) == 3:
+				if cmd[1] == "ROTATE" or cmd[1] == "TURN" or cmd[1] == "SPIN":
+					if cmd[2] == 'BACK':
+						self.rotate_gripper(self.step_size, False)
 						
 		elif cmd[0] == "OPEN":
 			self.set_gripper(0.08)
 		elif cmd[0] == ("CLOSE" or "GRASP"):
 			print(cmd)
 			self.set_gripper(0)
+		elif cmd[0] == "ROTATE" or cmd[0] == "TURN" or cmd[0] == "SPIN":
+			if len(cmd) < 2:
+				self.rotate_gripper(self.step_size)
+			else:
+				if cmd[1] == 'BACK':
+					self.rotate_gripper(self.step_size, False)
+
+
         
 		#________________CHANGE MODE_____________________________
 		elif cmd[0] == "MODE":
@@ -312,7 +353,6 @@ class RobotMover(object):
 				else:
 					print("REMOVE error: No task named " + cmd[1] + " found. Use LIST TASK command too see tasks.")
 				
-		
 		else:
 			rospy.loginfo("Command not found.")
 
