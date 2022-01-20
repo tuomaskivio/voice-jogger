@@ -336,6 +336,7 @@ class RobotMover(object):
 			print("")
 			print("Saved tasks:")
 			print("")
+			self.saved_tasks = tfh.load_task()
 			for taskname in self.saved_tasks:
 				print(taskname)	
 			print("")

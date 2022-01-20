@@ -21,11 +21,13 @@ class CommandCreator(object):
 			'panda': 'PANDA',
 			'ponder' : 'PANDA',
 			'bond' : 'PANDA',
+			'under' : 'PANDA',
 			'move' : 'MOVE',
 			'moved' : 'MOVE',
 			'more' : 'MOVE',
 			'go' : 'MOVE',
 			'up' : 'UP',
+			'hop' : 'UP',
 			'down' : 'DOWN',
 			"don't": 'DOWN',
 			'left' : 'LEFT',
@@ -73,6 +75,7 @@ class CommandCreator(object):
 			'so' : 'SHOW',
 			'task' : 'TASK',
 			'tasks' : 'TASK',
+			'desk' : 'TASK',
 			'remove' : 'REMOVE',
 			'delete' : 'DELETE',
 			'daily' : 'DELETE',
@@ -92,6 +95,7 @@ class CommandCreator(object):
 
 	def getCommand(self, words):
 		# first word tells what we want to do
+		allwords = copy.copy(words)
 		word1st = words.pop(0)
 		command = self.all_words_lookup_table.get(word1st)
 		
@@ -131,11 +135,12 @@ class CommandCreator(object):
 			# TODO
 			
 		elif type(command) == str:
-			cmdupper = copy.copy(command).upper()
-			if command == cmdupper:
-				return [command]
+			cmd = [command]
+			for word in words:
+				cmd.append(word)
+			return cmd
 		else:
-			return None
+			return allwords
 
 
 	def get_start_command(self, words):
