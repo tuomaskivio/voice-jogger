@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import copy
 from word2number import w2n
 
 class CommandCreator(object):
@@ -19,6 +20,7 @@ class CommandCreator(object):
 			'stop' : 'STOP',
 			'panda': 'PANDA',
 			'ponder' : 'PANDA',
+			'bond' : 'PANDA',
 			'move' : 'MOVE',
 			'moved' : 'MOVE',
 			'more' : 'MOVE',
@@ -39,6 +41,7 @@ class CommandCreator(object):
 			'to' : 'two',
 			'then' : 'ten',
 			'tree' : 'three',
+			'charity' : 'thirty',
 			'mode' : 'MODE',
 			'distance' : 'DISTANCE',
 			'direction' : 'DIRECTION',
@@ -61,6 +64,7 @@ class CommandCreator(object):
 			'close' : 'CLOSE',
             'glass' : 'CLOSE',
 			'gloves' : 'CLOSE',
+			'klaus' : 'CLOSE',
 			'list' : 'LIST',
 			'least' : 'LIST',
 			'shout' : 'SHOW',
@@ -71,7 +75,18 @@ class CommandCreator(object):
 			'tasks' : 'TASK',
 			'remove' : 'REMOVE',
 			'delete' : 'DELETE',
-			'daily' : 'DELETE'
+			'daily' : 'DELETE',
+			'home' : 'HOME',
+			'tom' : 'HOME',
+			'paul' : 'HOME',
+			'finish' : 'FINISH',
+			'vince' : 'FINISH',
+			'record' : 'RECORD',
+			'report' : 'RECORD',
+			'gripper' : 'GRIPPER',
+			'prepare' : 'GRIPPER',
+			'grasp' : 'GRASP',
+			'gasp' : 'GRASP'
 		}
 
 
@@ -85,7 +100,7 @@ class CommandCreator(object):
 		elif command == "STOP":
 			return self.get_stop_command(words)
 		elif command == "HOME":
-			return "HOME"
+			return ["HOME"]
 		elif command == "MOVE":
 			if self.mode == 'STEP':
 				return self.get_move_command_step_mode(words)
@@ -114,7 +129,11 @@ class CommandCreator(object):
 			if len(words) < 2:
 				return None
 			# TODO
-
+			
+		elif type(command) == str:
+			cmdupper = copy.copy(command).upper()
+			if command == cmdupper:
+				return [command]
 		else:
 			return None
 
