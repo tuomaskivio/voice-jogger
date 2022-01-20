@@ -60,7 +60,18 @@ class CommandCreator(object):
 			'open' : 'OPEN',
 			'close' : 'CLOSE',
             'glass' : 'CLOSE',
-			'gloves' : 'CLOSE'
+			'gloves' : 'CLOSE',
+			'list' : 'LIST',
+			'least' : 'LIST',
+			'shout' : 'SHOW',
+			'show' : 'SHOW',
+			'showed' : 'SHOW',
+			'so' : 'SHOW',
+			'task' : 'TASK',
+			'tasks' : 'TASK',
+			'remove' : 'REMOVE',
+			'delete' : 'DELETE',
+			'daily' : 'DELETE'
 		}
 
 
@@ -86,6 +97,24 @@ class CommandCreator(object):
 			return self.change_step_size(words)
 		elif command == "TOOL":
 			return self.get_tool_command(words)
+
+		#___________________LIST/SHOW TASKS______________________
+		elif command == "LIST" or command == "SHOW":
+			if len(words) != 1:
+				return None
+			else:
+				if self.all_words_lookup_table.get(words[0], '') not in ['TASK']:
+					print('Invalid command ' + words[0] + '. Did you mean LIST TASK?')
+					return None
+				else:
+					return ['LIST', 'TASKS']
+
+		#___________________REMOVE TASKNAME______________________
+		elif command == "REMOVE" or command == 'DELETE': 
+			if len(words) < 2:
+				return None
+			# TODO
+
 		else:
 			return None
 

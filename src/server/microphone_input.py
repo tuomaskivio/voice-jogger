@@ -53,24 +53,12 @@ try:
         print('#' * 80)
         while not rospy.is_shutdown():
             data = q.get()
-            # mode: step mode. Faster response time, because in the direction and distance mode distance needs to be recognized.
-            if commandCreator.mode == 0:
-
-                if rec.AcceptWaveform(data):
-                    rec.Reset()
-                else:
-                    words = json.loads(rec.PartialResult())["partial"].split(' ')
-                    if len(words) > 1:
-                        print(words)
-                        cmd = commandCreator.getCommand(words)
-
-            # mode: direction and distance
-            else:
-                if rec.AcceptWaveform(data):
-                    words = json.loads(rec.Result())["text"].split(' ')
-                    if len(words) > 1:
-                        print(words)
-                        cmd = commandCreator.getCommand(words)
+            
+            if rec.AcceptWaveform(data):
+                words = json.loads(rec.Result())["text"].split(' ')
+                #if len(words) > 1:
+                print(words)
+                cmd = commandCreator.getCommand(words)
 
             if cmd != None:
                 #start_robot means start sending commands
