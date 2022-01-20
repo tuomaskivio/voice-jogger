@@ -12,6 +12,7 @@ import pickle
 from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
+from word2number import w2n
 
 import textFileHandler as tfh
 
@@ -188,7 +189,7 @@ class RobotMover(object):
 			if self.mode == 'STEP':
 				stepSize = self.step_size
 			if self.mode == 'DISTANCE':
-				stepSize = float(cmd[2]) / 100
+				stepSize = float(cmd[2]) / 1000
 
 			if cmd[1] == "UP":
 				self.move_robot_cartesian("up", stepSize)
@@ -211,17 +212,41 @@ class RobotMover(object):
 				rospy.loginfo("Command not found.")
 		
 		elif cmd[0] == "UP":
-			self.move_robot_cartesian("up", self.step_size)
+			if len(cmd) > 1:
+				stepsize = get_number(cmd[1:]) / 1000
+			else:
+				stepsize = self.step_size
+			self.move_robot_cartesian("up", stepsize)
 		elif cmd[0] == "DOWN":
-			self.move_robot_cartesian("down", self.step_size)
+			if len(cmd) > 1:
+				stepsize = float(get_number(cmd[1:])) / 1000
+			else:
+				stepsize = self.step_size
+			self.move_robot_cartesian("down", stepsize)
 		elif cmd[0] == "LEFT":
-			self.move_robot_cartesian("left", self.step_size)
+			if len(cmd) > 1:
+				stepsize = float(get_number(cmd[1:])) / 1000
+			else:
+				stepsize = self.step_size
+			self.move_robot_cartesian("left", stepsize)
 		elif cmd[0] == "RIGHT":
-			self.move_robot_cartesian("right", self.step_size)
+			if len(cmd) > 1:
+				stepsize = float(get_number(cmd[1:])) / 1000
+			else:
+				stepsize = self.step_size
+			self.move_robot_cartesian("right", stepsize)
 		elif cmd[0] == "FORWARD":
-			self.move_robot_cartesian("forward", self.step_size)
+			if len(cmd) > 1:
+				stepsize = float(get_number(cmd[1:])) / 1000
+			else:
+				stepsize = self.step_size
+			self.move_robot_cartesian("forward", stepsize)
 		elif cmd[0] == "BACKWARD":
-			self.move_robot_cartesian("backward", self.step_size)
+			if len(cmd) > 1:
+				stepsize = float(get_number(cmd[1:])) / 1000
+			else:
+				stepsize = self.step_size
+			self.move_robot_cartesian("backward", stepsize)
 			
 		elif cmd[0] == 'POSITION': # move robot to saved position
 			self.move_robot_to_position(cmd[1])
@@ -359,7 +384,18 @@ class RobotMover(object):
 				
 		else:
 			rospy.loginfo("Command not found.")
+			
 
+def get_number(words):
+	number_words = copy.copy(words)
+	print("print numbers: ", number_words)
+	# Replace words that sound like number with numbers
+	try:
+		value = float(w2n.word_to_num(' '.join(number_words)))
+		return value
+	except Exception as a:
+		print("Invalid number.")
+		return 0
 
 
 def main():
