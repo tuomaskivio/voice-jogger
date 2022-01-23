@@ -70,6 +70,7 @@ class CommandCreator(object):
             'glass' : 'CLOSE',
 			'gloves' : 'CLOSE',
 			'klaus' : 'CLOSE',
+			'rotate' : 'ROTATE',
 			'list' : 'LIST',
 			'lace' : 'LIST',
 			'laced' : 'LIST',
@@ -99,6 +100,8 @@ class CommandCreator(object):
 			'paul' : 'HOME',
 			'finish' : 'FINISH',
 			'vince' : 'FINISH',
+			'phyllis' : 'FINISH',
+			'phoenix' : 'FINISH',
 			'record' : 'RECORD',
 			'report' : 'RECORD',
 			'gripper' : 'GRIPPER',
@@ -116,8 +119,14 @@ class CommandCreator(object):
 	def getCommand(self, words):
 		# first word tells what we want to do
 		allwords = copy.copy(words)
-		word1st = words.pop(0)
-		command = self.all_words_lookup_table.get(word1st)
+
+		# Take a new word from the words-list until word is found from all_words_lookup_table
+		command =  self.all_words_lookup_table.get(words.pop(0))
+		while(command == None):
+			if len(words) == 0:
+				return None
+			else:
+				command = self.all_words_lookup_table.get(words.pop(0))
 		
 		if command == "START":
 			return self.get_start_command(words)
@@ -136,6 +145,17 @@ class CommandCreator(object):
 			return self.change_step_size(words)
 		elif command == "TOOL":
 			return self.get_tool_command(words)
+
+		#___________________ROTATE TOOL_____________________________
+		elif command == "ROTATE":
+			if len(words) == 0:
+				return ["ROTATE"]
+			else:
+				if self.all_words_lookup_table.get(words[0], '') in ['BACK', 'BACKWARD']:
+					return ["ROTATE", "BACK"]
+				else:
+					print("Invalid " + command + " command.")
+					return None
 
 		#___________________RECORD TASKNAME_____________________________
 		elif command == "RECORD":
@@ -197,7 +217,6 @@ class CommandCreator(object):
 			else:
 				print('Invalid ' + command + ' command. Correct form: SAVE POSITION/SPOT [position name]')
 				return None
-
 
 		#___________________MOVE TO POSITION___________________________
 		elif command == "POSITION" or command == "SPOT":
