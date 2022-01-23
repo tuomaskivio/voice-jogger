@@ -15,6 +15,7 @@ class CommandCreator(object):
 
 		self.all_words_lookup_table = {
 			'start' : 'START',
+			'started' : 'STARTED',
 			'star' : 'START',
 			'stat' : 'START',
 			'stop' : 'STOP',
@@ -22,6 +23,7 @@ class CommandCreator(object):
 			'ponder' : 'PANDA',
 			'bond' : 'PANDA',
 			'under' : 'PANDA',
+			'fonda' : 'PANDA',
 			'move' : 'MOVE',
 			'moved' : 'MOVE',
 			'more' : 'MOVE',
@@ -43,6 +45,7 @@ class CommandCreator(object):
 			'to' : 'two',
 			'then' : 'ten',
 			'tree' : 'three',
+			'tray' : 'three',
 			'charity' : 'thirty',
 			'mode' : 'MODE',
 			'distance' : 'DISTANCE',
@@ -68,6 +71,8 @@ class CommandCreator(object):
 			'gloves' : 'CLOSE',
 			'klaus' : 'CLOSE',
 			'list' : 'LIST',
+			'lace' : 'LIST',
+			'laced' : 'LIST',
 			'least' : 'LIST',
 			'shout' : 'SHOW',
 			'show' : 'SHOW',
@@ -76,10 +81,19 @@ class CommandCreator(object):
 			'task' : 'TASK',
 			'tasks' : 'TASK',
 			'desk' : 'TASK',
+			'desks' : 'TASK',
 			'dusk' : 'TASK',
- 			'remove' : 'REMOVE',
+			'play' : 'PLAY',
+			'blade' : 'PLAY',
+			'do' : 'DO',
+  			'remove' : 'REMOVE',
+  			'ramos' : 'REMOVE',
 			'delete' : 'DELETE',
 			'daily' : 'DELETE',
+			'save' : 'SAVE',
+			'saves' : 'SAVE',
+			'say' : 'SAVE',
+			'same' : 'SAVE',
 			'home' : 'HOME',
 			'tom' : 'HOME',
 			'paul' : 'HOME',
@@ -90,7 +104,12 @@ class CommandCreator(object):
 			'gripper' : 'GRIPPER',
 			'prepare' : 'GRIPPER',
 			'grasp' : 'GRASP',
-			'gasp' : 'GRASP'
+			'gasp' : 'GRASP',
+			'position' : 'POSITION',
+			'positions' : 'POSITION',
+			'postseason' : 'POSITION',
+			'spot' : 'SPOT',
+			'spots' : 'SPOT'
 		}
 
 
@@ -118,42 +137,111 @@ class CommandCreator(object):
 		elif command == "TOOL":
 			return self.get_tool_command(words)
 
-		#___________________LIST/SHOW TASKS______________________
+		#___________________RECORD TASKNAME_____________________________
+		elif command == "RECORD":
+			task_name = self.get_name(words)
+			if task_name is not None:
+				return ["RECORD", task_name]
+			else:
+				print('Invalid ' + command + ' command. Correct form: RECORD [task name]')
+				return None
+
+		#___________________REMOVE/DELETE TASK/POSITION______________________
+		elif command == "REMOVE" or command == 'DELETE':
+			# Remove position
+			if self.all_words_lookup_table.get(words[0], '') in ['POSITION', 'SPOT']:
+				words.pop(0)
+				position_name = self.get_name(words)
+				return ["REMOVE", "POSITION", position_name]
+			else:
+				task_name = self.get_name(words)
+				if task_name is not None:
+					return ["REMOVE", task_name]
+				else:
+					print('Invalid ' + command + ' command. Correct form: REMOVE/DELETE [task name]')
+					return None
+
+		#___________________PLAY/DO/TASK TASKNAME______________________
+		elif command == 'TASK' or command == 'DO' or command == 'PLAY':
+			task_name = self.get_name(words)
+			if task_name is not None:
+				return ["TASK", task_name]
+			else:
+				print('Invalid ' + command + ' command. Correct form: TASK/DO/PLAY [task name]')
+				return None
+
+		#___________________LIST/SHOW TASKS/POSITIONS__________________
 		elif command == "LIST" or command == "SHOW":
 			if len(words) != 1:
+				print('Invalid command ' + command + '. Correct form: LIST/SHOW TASK/TASKS/POSITION/POSITIONS')
 				return None
 			else:
-				if self.all_words_lookup_table.get(words[0], '') not in ['TASK']:
-					print('Invalid command ' + words[0] + '. Did you mean LIST TASK?')
-					return None
-				else:
+				# list tasks
+				if self.all_words_lookup_table.get(words[0], '') in ['TASK']:
 					return ['LIST', 'TASKS']
-
-		#___________________REMOVE/DELETE TASKNAME______________________
-		elif command == "REMOVE" or command == 'DELETE':
-			if len(words) == 1:
-				return ['REMOVE', words[0].upper()]
-			elif len(words) > 1:
-				task_name = words.pop(0).upper()
-				# Check does task_name has number
-				number = self.get_number(words)
-				if number is None:
-					print('Invalid ' + command + task_name, " ", words,  ' command. Correct form: REMOVE/DELETE TASKNAME.')
-					return None
+				elif self.all_words_lookup_table.get(words[0], '') in ['POSITION', 'SPOT']:
+					return ['LIST', 'POSITIONS']
 				else:
-					task_name = task_name + str(number)
-					return ['REMOVE', task_name]
-			else:
-				print('Invalid ' + command + ' command. Correct form: REMOVE/DELETE TASKNAME.')
+					print('Invalid command ' + words[0] + '. Correct form: LIST/SHOW TASK/TASKS/POSITION/POSITIONS')
+					return None
 
-			
+		#___________________SAVE POSITION______________________________
+		elif command == "SAVE":
+			if self.all_words_lookup_table.get(words.pop(0), '') in ['POSITION', 'SPOT']:
+				position_name = self.get_name(words)
+				if position_name is not None:
+					return ['SAVE', 'POSITION', position_name]
+				else:
+					print('Invalid ' + command + ' command. Correct form: SAVE POSITION/SPOT [position name]')
+					return None
+			else:
+				print('Invalid ' + command + ' command. Correct form: SAVE POSITION/SPOT [position name]')
+				return None
+
+
+		#___________________MOVE TO POSITION___________________________
+		elif command == "POSITION" or command == "SPOT":
+			position_name = self.get_name(words)
+			return ["POSITION", position_name]
+
+
 		elif type(command) == str:
+			# Command from all_words_lookup_table
 			cmd = [command]
 			for word in words:
 				cmd.append(word)
 			return cmd
 		else:
+			# The first word not in all_words_lookup_table
 			return allwords
+
+	def get_name(self, words):
+		# no name
+		if len(words) < 1:
+			return None
+
+		# only name. E.g. TASK
+		elif len(words) == 1:
+			# if name is only number
+			name_is_number = self.get_number(words)
+			if name_is_number is None:
+				return words[0].upper()
+			else:
+				return name_is_number
+
+		# number at the end of name. E.g. TASK1
+		elif len(words) > 1:
+			task_name = words.pop(0).upper()
+			# Check does task_name has number
+			number = self.get_number(words)
+			if number is None:
+				# Other word at the end of name. E.g. TASKPICK
+				extra_name = ''.join(words)
+				return task_name + extra_name
+			else:
+				# number at the end of name. E.g. TASK1
+				task_name = task_name + str(number)
+				return task_name
 
 
 	def get_start_command(self, words):
@@ -206,13 +294,11 @@ class CommandCreator(object):
 
 	def get_number(self, words):
 		number_words = words.copy()
-		print("print numbers: ", number_words)
 		# Replace words that sound like number with numbers
 		for i,word in enumerate(words):
 			new_word = self.all_words_lookup_table.get(word, None)
 			if new_word:
 				number_words[i] = new_word
-		print("number_words: ", number_words)
 		try:
 			value = w2n.word_to_num(' '.join(number_words))
 			return value

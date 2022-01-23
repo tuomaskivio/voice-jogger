@@ -235,13 +235,13 @@ class RobotMover(object):
 			else:
 				stepsize = self.step_size
 			self.move_robot_cartesian("right", stepsize)
-		elif cmd[0] == "FORWARD":
+		elif cmd[0] == "FORWARD" or cmd[0] == "FRONT":
 			if len(cmd) > 1:
 				stepsize = float(get_number(cmd[1:])) / 1000
 			else:
 				stepsize = self.step_size
 			self.move_robot_cartesian("forward", stepsize)
-		elif cmd[0] == "BACKWARD":
+		elif cmd[0] == "BACKWARD" or cmd[0] == "BACK":
 			if len(cmd) > 1:
 				stepsize = float(get_number(cmd[1:])) / 1000
 			else:
@@ -322,6 +322,7 @@ class RobotMover(object):
 			self.saved_positions[cmd[2]] = self.move_group.get_current_pose().pose
 			tfh.write_position(self.saved_positions)
 			self.saved_positions = tfh.load_position()
+			print("Position " + cmd[2] + " saved.")
 			
 			
 		#_______________REMOVE ROBOT POSITION____________________
@@ -329,6 +330,7 @@ class RobotMover(object):
 			if cmd[2] in self.saved_positions.keys():
 				tfh.deleteItem('positions.txt', cmd[2])
 				self.saved_positions = tfh.load_position()
+				print("Position " + cmd[2] + " removed.")
 			else:
 				rospy.loginfo("Not enough arguments, expected REMOVE POSITION [position name]")
 			
@@ -347,27 +349,49 @@ class RobotMover(object):
 			else:
 				print("RECORD error: give task name.")
 		
-		elif cmd[0] in self.saved_tasks.keys():
-			step_size_before_task = self.step_size
-			self.step_size = self.saved_tasks[cmd[0]]["start_step_size"]
-			start_pose = self.saved_tasks[cmd[0]]["start_pose"]
-			(plan, fraction) = self.move_group.compute_cartesian_path([start_pose], 0.01, 0.0)
-			self.move_group.execute(plan, wait=True)
-			for step in self.saved_tasks[cmd[0]]["moves"]:
-				print("calling handle received command with params", step)
-				self.handle_received_command(step)
-			self.step_size = step_size_before_task
+		elif cmd[0] == 'TASK' or cmd[0] == 'DO' or cmd[0] == 'PLAY':
+			if len(cmd) > 1:
+				if cmd[1] in self.saved_tasks.keys():
+					step_size_before_task = self.step_size
+					self.step_size = self.saved_tasks[cmd[1]]["start_step_size"]
+					start_pose = self.saved_tasks[cmd[1]]["start_pose"]
+					(plan, fraction) = self.move_group.compute_cartesian_path([start_pose], 0.01, 0.0)
+					self.move_group.execute(plan, wait=True)
+					for step in self.saved_tasks[cmd[1]]["moves"]:
+						print("calling handle received command with params", step)
+						self.handle_received_command(step)
+					self.step_size = step_size_before_task
+				else:
+					print("Executing task failed: Task name " + cmd[1] + " not in recorded tasks.")
+			else:
+				print("Executing task failed: Correct command: TASK/DO/PLAY [task name]")
 
 
 		#___________________TEXT FILE HANDLING______________________
-		elif cmd[0] == 'LIST' and cmd[1] == 'TASKS':
-			print("")
-			print("Saved tasks:")
-			print("")
-			self.saved_tasks = tfh.load_task()
-			for taskname in self.saved_tasks:
-				print(taskname)	
-			print("")
+		#___________________LIST TASKS/POSITIONS______________________
+		elif cmd[0] == 'LIST':
+			if len(cmd) != 1:
+				if cmd[1] == 'TASKS':
+					print("")
+					print("Saved tasks:")
+					print("")
+					self.saved_tasks = tfh.load_task()
+					for taskname in self.saved_tasks:
+						print(taskname)	
+					print("")
+				elif cmd[1] == 'POSITIONS':
+					print("")
+					print("Saved positions:")
+					print("")
+					self.saved_positions = tfh.load_position()
+					for position in self.saved_positions:
+						print(position)
+					print("")
+				else:
+					print("Listing failed. List tasks: LIST TASKS. List positions: LIST POSITIONS.")
+			else:
+				print("Listing failed. List tasks: LIST TASKS. List positions: LIST POSITIONS.")
+
 
 		elif cmd[0] == 'REMOVE':
 			if len(cmd) < 2:
@@ -383,7 +407,7 @@ class RobotMover(object):
 					print("REMOVE error: No task named " + cmd[1] + " found. Use LIST TASK command too see tasks.")
 				
 		else:
-			rospy.loginfo("Command not found.")
+			print("Command not found.")
 			
 
 def get_number(words):
