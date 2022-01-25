@@ -4,6 +4,8 @@
 import sys
 import copy
 import rospy
+import actionlib
+import franka_dataflow
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
@@ -13,6 +15,11 @@ from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
 from word2number import w2n
+from franka_gripper.msg import ( GraspAction, GraspGoal,
+                                 HomingAction, HomingGoal,
+                                 MoveAction, MoveGoal,
+                                 StopAction, StopGoal,
+                                 GraspEpsilon )
 
 import textFileHandler as tfh
 
@@ -41,9 +48,6 @@ class RobotMover(object):
 		# This interface can be used to plan and execute motions:
 		group_name = "panda_arm"
 		move_group = moveit_commander.MoveGroupCommander(group_name)
-		
-		group_name = "panda_arm_hand"
-		move_group_gripper = moveit_commander.MoveGroupCommander(group_name)
         
 		# Create a `DisplayTrajectory`_ ROS publisher which is used to display
 		# trajectories in Rviz:
@@ -55,14 +59,17 @@ class RobotMover(object):
         
 		# Subscriber for text commands
 		text_command_subscriber = rospy.Subscriber("/text_commands", String, self.handle_received_command)
-        
+
+		# Clients to send commands to the gripper
+		self.grasp_action_client = actionlib.SimpleActionClient("{}grasp".format('/franka_gripper/'), GraspAction)
+		self.move_action_client = actionlib.SimpleActionClient("{}move".format('/franka_gripper/'), MoveAction)
+
 		# class variables
 		self.robot = robot
 		self.scene = scene
 		self.move_group = move_group
-		self.move_group_gripper = move_group_gripper
 		self.step_size = 0.05
-		self.mode = 'STEP' # step, distance
+		self.mode = 'STEP'  # step, distance
 		self.position1 = None
 		self.position2 = None
 		self.recording_task_name = None
@@ -125,17 +132,25 @@ class RobotMover(object):
 		(plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
 		self.move_group.execute(plan, wait=True)
         
-        
-	def set_gripper(self, distance):
-		rospy.loginfo("Set gripper to %s mm", distance*1000)
-		joint_goal = self.move_group_gripper.get_current_joint_values()
-		
-		joint_goal[7] = distance/2
-		joint_goal[8] = distance/2
-            
-		self.move_group_gripper.go(joint_goal, wait=True)
-		self.move_group_gripper.stop()
+	def open_gripper(self):
+		movegoal = MoveGoal()
+		movegoal.width = 0.08
+		movegoal.speed = 0.05
+		self.move_action_client.send_goal(movegoal)
 
+	def set_gripper_distance(self, distance):
+		movegoal = MoveGoal()
+		movegoal.width = distance
+		movegoal.speed = 0.05
+		self.move_action_client.send_goal(movegoal)
+
+	def close_gripper(self):
+		graspgoal = GraspGoal()
+		graspgoal.width = 0.00
+		graspgoal.speed = 0.05
+		graspgoal.force = 2  # limits 0.01 - 50 N
+		graspgoal.epsilon = GraspEpsilon(inner=0.08, outer=0.08)
+		self.grasp_action_client.send_goal(graspgoal)
 
 	def rotate_gripper(self, stepSize, clockwise = True):
 		# step size are: 0.01, 0.05, 0.1
@@ -255,9 +270,9 @@ class RobotMover(object):
 		elif cmd[0] == "GRIPPER" or cmd[0] == "TOOL":
 			if len(cmd) == 2:
 				if cmd[1] == "OPEN":
-					self.set_gripper(0.08)
+					self.open_gripper()
 				elif cmd[1] == "CLOSE":
-					self.set_gripper(0)
+					self.close_gripper()
 				elif cmd[1] == "ROTATE" or cmd[1] == "TURN" or cmd[1] == "SPIN":
 					self.rotate_gripper(self.step_size)
 				elif cmd[1] == "HOME":
@@ -265,7 +280,7 @@ class RobotMover(object):
 				else:
 					try:
 						distance = float(cmd[1]) / 1000
-						self.set_gripper(distance)
+						self.set_gripper_distance(distance)
 					except ValueError:
 						rospy.loginfo('Invalid gripper command "%s" received, available commands are:', cmd[1])
 						rospy.loginfo('OPEN, CLOSE, ROTATE or distance between fingers in units mm between 0-80')
@@ -275,10 +290,10 @@ class RobotMover(object):
 						self.rotate_gripper(self.step_size, False)
 						
 		elif cmd[0] == "OPEN":
-			self.set_gripper(0.08)
+			self.open_gripper()
 		elif cmd[0] == ("CLOSE" or "GRASP"):
 			print(cmd)
-			self.set_gripper(0)
+			self.close_gripper()
 		elif cmd[0] == "ROTATE" or cmd[0] == "TURN" or cmd[0] == "SPIN":
 			if len(cmd) < 2:
 				self.rotate_gripper(self.step_size)
