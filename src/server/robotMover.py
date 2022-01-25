@@ -276,7 +276,7 @@ class RobotMover(object):
 						
 		elif cmd[0] == "OPEN":
 			self.set_gripper(0.08)
-		elif cmd[0] == ("CLOSE" or "GRASP"):
+		elif cmd[0] == "CLOSE" or cmd[0] == "GRASP":
 			print(cmd)
 			self.set_gripper(0)
 		elif cmd[0] == "ROTATE" or cmd[0] == "TURN" or cmd[0] == "SPIN":

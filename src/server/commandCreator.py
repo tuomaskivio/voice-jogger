@@ -13,11 +13,21 @@ class CommandCreator(object):
 		# step sizes: LOW, MEDIUM, HIGH
 		self.step_size = 'MEDIUM'
 
+		# original words from microphone_input after one speech
+		self.original_words = []
+
+		# current words. Amount of words decrease when buffering.
+		self.current_words = []
+
+		# do buffering when true
+		self.buffering_ok = True
+
 		self.all_words_lookup_table = {
 			'start' : 'START',
 			'started' : 'STARTED',
 			'star' : 'START',
 			'stat' : 'START',
+			'part' : 'START',
 			'stop' : 'STOP',
 			'panda': 'PANDA',
 			'ponder' : 'PANDA',
@@ -30,9 +40,11 @@ class CommandCreator(object):
 			'go' : 'MOVE',
 			'up' : 'UP',
 			'hop' : 'UP',
+			'op' : 'UP',
 			'down' : 'DOWN',
 			"don't": 'DOWN',
 			'left' : 'LEFT',
+			'life' : 'LEFT',
 			'write' : 'RIGHT',
 			'right' : 'RIGHT',
 			'alright' : 'RIGHT',
@@ -53,6 +65,9 @@ class CommandCreator(object):
 			'step' : 'STEP',
 			'steps' : 'STEP',
 			'low' : 'LOW',
+			'glow' : 'LOW',
+			'blow' : 'LOW',
+			'flow' : 'LOW',
 			'medium' : 'MEDIUM',
 			'high' : 'HIGH',
 			'hi' : 'HIGH',
@@ -70,6 +85,7 @@ class CommandCreator(object):
             'glass' : 'CLOSE',
 			'gloves' : 'CLOSE',
 			'klaus' : 'CLOSE',
+			'grasp' : 'GRASP',
 			'rotate' : 'ROTATE',
 			'list' : 'LIST',
 			'lace' : 'LIST',
@@ -112,16 +128,79 @@ class CommandCreator(object):
 			'positions' : 'POSITION',
 			'postseason' : 'POSITION',
 			'spot' : 'SPOT',
-			'spots' : 'SPOT'
+			'spots' : 'SPOT',
+			'other' : 'OTHER',
+			'opposite' : 'OPPOSITE', 
+			'counter' : 'COUNTER'
 		}
 
 
-	def getCommand(self, words):
-		# first word tells what we want to do
-		allwords = copy.copy(words)
+	def getCommand(self, first_call):
+		allwords = copy.copy(self.original_words)
+
+		if first_call:
+			self.buffering_ok = True
+			# Filtering words
+			filtered_words = []
+			for word in self.original_words:
+				# Check is word inside all_words_lookup_table
+				checked_word = self.all_words_lookup_table.get(word)
+
+				# Can't do buffering if one of these words exists
+				if checked_word != None:
+					if checked_word in ["MOVE", "ROTATE", "RECORD", "REMOVE", "DELETE", 
+					"TASK", "DO", "PLAY", "SAVE", "POSITION", "SPOT"]:
+						self.buffering_ok = False
+
+				# Check is word number
+				checked_number = self.get_number([word])
+
+				# Can't do buffering if number exists
+				if checked_number != None:
+					self.buffering_ok = False
+
+				# Add word to filtered_words
+				# word is known word and number
+				if checked_word != None and checked_number != None:
+					filtered_words.append(word)
+				# word is number
+				elif checked_word == None and checked_number != None:
+					filtered_words.append(word)
+				# word is known word
+				elif checked_word != None and checked_number == None:
+					filtered_words.append(word)
+				else:
+					continue
+
+			if self.buffering_ok:
+				self.current_words = filtered_words
+			else:
+				self.current_words = []
+
+			if self.original_words[0] != "":
+				print(80*"-")
+				print("All recorded words: ")
+				print(self.original_words)
+				print("")
+				print("Filtered_words: ")
+				print(filtered_words)
+				print("")
+
+		words = []
+		if first_call:
+			if self.buffering_ok:
+				words = self.current_words
+			else:
+				words = self.original_words
+		else:
+			words = self.current_words
 
 		# Take a new word from the words-list until word is found from all_words_lookup_table
-		command =  self.all_words_lookup_table.get(words.pop(0))
+		if len(words) > 0:
+			command =  self.all_words_lookup_table.get(words.pop(0))
+		else:
+			return None
+
 		while(command == None):
 			if len(words) == 0:
 				return None
@@ -146,12 +225,27 @@ class CommandCreator(object):
 		elif command == "TOOL":
 			return self.get_tool_command(words)
 
-		#___________________ROTATE TOOL_____________________________
+		#___________________MOVING COMMANDS____________________________
+		elif command in ['UP', 'DOWN', 'LEFT', 'RIGHT', 'FORWARD', 'BACKWARD']:
+			# Check distance
+			if len(words) > 0:
+				distance = self.get_number(words)
+				print("Buffeeing: ", self.buffering_ok)
+				if self.buffering_ok:
+					return [command]
+				elif not self.buffering_ok and distance != None:
+					return [command, distance]
+				else:
+					print("Invalid moving command. ")
+					return None
+			return [command]
+
+		#___________________ROTATE TOOL________________________________
 		elif command == "ROTATE":
 			if len(words) == 0:
 				return ["ROTATE"]
 			else:
-				if self.all_words_lookup_table.get(words[0], '') in ['BACK', 'BACKWARD']:
+				if self.all_words_lookup_table.get(words[0], '') in ['OTHER', 'COUNTER', 'OPPOSITE']:
 					return ["ROTATE", "BACK"]
 				else:
 					print("Invalid " + command + " command.")
@@ -322,7 +416,7 @@ class CommandCreator(object):
 			value = w2n.word_to_num(' '.join(number_words))
 			return value
 		except Exception as a:
-			print("Invalid number.")
+			pass
 
 
 	def get_move_command_step_mode(self, words):
