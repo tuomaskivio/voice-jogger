@@ -34,6 +34,7 @@ class CommandCreator(object):
 			'bond' : 'PANDA',
 			'under' : 'PANDA',
 			'fonda' : 'PANDA',
+			'bondo' : 'PANDA',
 			'move' : 'MOVE',
 			'moved' : 'MOVE',
 			'more' : 'MOVE',
@@ -148,7 +149,7 @@ class CommandCreator(object):
 
 				# Can't do buffering if one of these words exists
 				if checked_word != None:
-					if checked_word in ["MOVE", "ROTATE", "RECORD", "REMOVE", "DELETE", 
+					if checked_word in ["MOVE", "RECORD", "REMOVE", "DELETE", 
 					"TASK", "DO", "PLAY", "SAVE", "POSITION", "SPOT"]:
 						self.buffering_ok = False
 
@@ -230,7 +231,6 @@ class CommandCreator(object):
 			# Check distance
 			if len(words) > 0:
 				distance = self.get_number(words)
-				print("Buffeeing: ", self.buffering_ok)
 				if self.buffering_ok:
 					return [command]
 				elif not self.buffering_ok and distance != None:
@@ -246,7 +246,10 @@ class CommandCreator(object):
 				return ["ROTATE"]
 			else:
 				if self.all_words_lookup_table.get(words[0], '') in ['OTHER', 'COUNTER', 'OPPOSITE']:
+					words.pop(0)
 					return ["ROTATE", "BACK"]
+				elif self.all_words_lookup_table.get(words[0], '') in ['UP', 'DOWN', 'LEFT', 'RIGHT', 'FORWARD', 'BACKWARD']:
+					return ["ROTATE"] 
 				else:
 					print("Invalid " + command + " command.")
 					return None

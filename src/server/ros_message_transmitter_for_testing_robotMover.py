@@ -26,7 +26,7 @@ if __name__== '__main__':
 	print("OPEN/CLOSE                            -Open or close gripper")
 	print("OPEN/CLOSE [0 - 80]                   -Open or close gripper given distance (mm)")
 	print("ROTATE                                -Rotate gripper clockwise amount of step size")
-	print("ROTATE BACK                           -Rotate gripper counter-clockwise amount of step size")
+	print("ROTATE OPPOSITE                       -Rotate gripper counter-clockwise amount of step size")
 	print("")
 
 	print("LIST TASKS/POSITIONS                  -List saved tasks or positions")
