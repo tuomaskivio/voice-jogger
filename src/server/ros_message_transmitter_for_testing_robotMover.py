@@ -8,25 +8,39 @@ if __name__== '__main__':
 
 	pub = rospy.Publisher("/text_commands", String, queue_size=10) # queue_size gives time for subscriber to process data it gets
 	
-	print("Give capitalized commands:")
-	print("Go to home position: ")
-	print("HOME")
+	print(92*"_")
 	print("")
-	print("Stepping mode: ")
-	print("MOVE UP, DOWN, LEFT, RIGHT, FORWARD, BACKWARD")
+	print("HOME                                  -Go to home position")
 	print("")
-	print("Direction and distance mode:")
-	print("MOVE UP 10, MOVE DOWN 20...")
+
+	print("UP/DOWN/LEFT/RIGHT/FRONT/BACK         -Move amount of step size to the given direction")
+	print("UP/DOWN [distance]                    -Move given distance (mm) to the given direction")
 	print("")
-	print("Change step size:")
-	print("STEP SIZE LOW/MEDIUM/HIGH")
+
+	print("POSITION [position name]              -Move to saved position")
 	print("")
-	print("Change mode:")
-	print("MODE STEP/DISTANCE")
+
+	print("TASK/DO/PLAY [task name]              -Execute saved task")
 	print("")
-	print("Control gripper:")
-	print("GRIPPER OPEN/CLOSE/[0 - 80] or only OPEN/CLOSE")
+
+	print("OPEN/CLOSE                            -Open or close gripper")
+	print("OPEN/CLOSE [0 - 80]                   -Open or close gripper given distance (mm)")
+	print("ROTATE                                -Rotate gripper clockwise amount of step size")
+	print("ROTATE OPPOSITE                       -Rotate gripper counter-clockwise amount of step size")
 	print("")
+
+	print("LIST TASKS/POSITIONS                  -List saved tasks or positions")
+	print("SAVE POSITION [position name]         -Save robot's current position with name")
+	print("REMOVE POSITION [position name]       -Remove saved position with name")
+	print("")
+
+	print("RECORD [task name]                    -Start recording task with name")
+	print("REMOVE [task name]                    -Remove saved task with name")
+	print("")
+
+	print("STEP SIZE LOW/MEDIUM/HIGH             -Change step size: low(10mm), medium(50mm), high(100mm)")
+	print("MODE STEP/DISTANCE                    -Change mode")
+	print(92*"_")
 	
 
 	while not rospy.is_shutdown():

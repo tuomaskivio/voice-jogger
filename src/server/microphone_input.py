@@ -57,8 +57,12 @@ try:
             if rec.AcceptWaveform(data):
                 words = json.loads(rec.Result())["text"].split(' ')
                 #if len(words) > 1:
-                print(words)
-                cmd = commandCreator.getCommand(words)
+                # print(80*"-")
+                # print("All recorded words: ")
+                # print(words)
+                # print("")
+                commandCreator.original_words = words
+                cmd = commandCreator.getCommand(True)
 
             if cmd != None:
                 #start_robot means start sending commands
@@ -82,9 +86,41 @@ try:
                 if start_robot and cmd != None:
                     cmdString = ' '.join(map(str, cmd))
                     pub.publish(cmdString)
-                    print(cmdString)
+                    rospy.loginfo("Sent command: " + cmdString)
                     rec.Reset()
                     cmd = None
+
+            while len(commandCreator.current_words) > 0:
+                cmd = commandCreator.getCommand(False)
+
+                if cmd != None:
+                    #start_robot means start sending commands
+                    if cmd[0] == 'START':
+                        start_robot = True
+                        print('Starting with command: ', cmd)
+                        rec.Reset()
+                        cmd = None
+
+                        # Update RobotMover every time PANDA is started here.
+                        pub.publish('MODE ' + commandCreator.mode)
+                        pub.publish('STEP SIZE ' + commandCreator.step_size)
+
+                    elif cmd[0] == 'STOP':
+                        start_robot = False
+                        print('Stopping with command: ', cmd)
+                        rec.Reset()
+                        cmd = None
+
+                    # cmds are published after the robot is started
+                    if start_robot and cmd != None:
+                        cmdString = ' '.join(map(str, cmd))
+                        pub.publish(cmdString)
+                        rospy.loginfo("Sent command: " + cmdString)
+                        rec.Reset()
+                        cmd = None
+
+            
+
 
 except (KeyboardInterrupt) as e:
     print(e)

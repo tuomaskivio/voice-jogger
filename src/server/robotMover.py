@@ -4,12 +4,19 @@
 import sys
 import copy
 import rospy
+import actionlib
+import franka_dataflow
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 
 from std_msgs.msg import String
 from word2number import w2n
+from franka_gripper.msg import ( GraspAction, GraspGoal,
+                                 HomingAction, HomingGoal,
+                                 MoveAction, MoveGoal,
+                                 StopAction, StopGoal,
+                                 GraspEpsilon )
 
 import textFileHandler as tfh
 
@@ -38,9 +45,6 @@ class RobotMover(object):
 		# This interface can be used to plan and execute motions:
 		group_name = "panda_arm"
 		move_group = moveit_commander.MoveGroupCommander(group_name)
-		
-		group_name = "panda_arm_hand"
-		move_group_gripper = moveit_commander.MoveGroupCommander(group_name)
         
 		# Create a `DisplayTrajectory`_ ROS publisher which is used to display
 		# trajectories in Rviz:
@@ -52,14 +56,17 @@ class RobotMover(object):
         
 		# Subscriber for text commands
 		text_command_subscriber = rospy.Subscriber("/text_commands", String, self.handle_received_command)
-        
+
+		# Clients to send commands to the gripper
+		self.grasp_action_client = actionlib.SimpleActionClient("{}grasp".format('/franka_gripper/'), GraspAction)
+		self.move_action_client = actionlib.SimpleActionClient("{}move".format('/franka_gripper/'), MoveAction)
+
 		# class variables
 		self.robot = robot
 		self.scene = scene
 		self.move_group = move_group
-		self.move_group_gripper = move_group_gripper
 		self.step_size = 0.05
-		self.mode = 'STEP' # step, distance
+		self.mode = 'STEP'  # step, distance
 		self.position1 = None
 		self.position2 = None
 		self.recording_task_name = None
@@ -122,17 +129,25 @@ class RobotMover(object):
 		(plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
 		self.move_group.execute(plan, wait=True)
         
-        
-	def set_gripper(self, distance):
-		rospy.loginfo("Set gripper to %s mm", distance*1000)
-		joint_goal = self.move_group_gripper.get_current_joint_values()
-		
-		joint_goal[7] = distance/2
-		joint_goal[8] = distance/2
-            
-		self.move_group_gripper.go(joint_goal, wait=True)
-		self.move_group_gripper.stop()
+	def open_gripper(self):
+		movegoal = MoveGoal()
+		movegoal.width = 0.08
+		movegoal.speed = 0.05
+		self.move_action_client.send_goal(movegoal)
 
+	def set_gripper_distance(self, distance):
+		movegoal = MoveGoal()
+		movegoal.width = distance
+		movegoal.speed = 0.05
+		self.move_action_client.send_goal(movegoal)
+
+	def close_gripper(self):
+		graspgoal = GraspGoal()
+		graspgoal.width = 0.00
+		graspgoal.speed = 0.05
+		graspgoal.force = 2  # limits 0.01 - 50 N
+		graspgoal.epsilon = GraspEpsilon(inner=0.08, outer=0.08)
+		self.grasp_action_client.send_goal(graspgoal)
 
 	def rotate_gripper(self, stepSize, clockwise = True):
 		# step size are: 0.01, 0.05, 0.1
@@ -232,13 +247,13 @@ class RobotMover(object):
 			else:
 				stepsize = self.step_size
 			self.move_robot_cartesian("right", stepsize)
-		elif cmd[0] == "FORWARD":
+		elif cmd[0] == "FORWARD" or cmd[0] == "FRONT":
 			if len(cmd) > 1:
 				stepsize = float(get_number(cmd[1:])) / 1000
 			else:
 				stepsize = self.step_size
 			self.move_robot_cartesian("forward", stepsize)
-		elif cmd[0] == "BACKWARD":
+		elif cmd[0] == "BACKWARD" or cmd[0] == "BACK":
 			if len(cmd) > 1:
 				stepsize = float(get_number(cmd[1:])) / 1000
 			else:
@@ -252,9 +267,9 @@ class RobotMover(object):
 		elif cmd[0] == "GRIPPER" or cmd[0] == "TOOL":
 			if len(cmd) == 2:
 				if cmd[1] == "OPEN":
-					self.set_gripper(0.08)
+					self.open_gripper()
 				elif cmd[1] == "CLOSE":
-					self.set_gripper(0)
+					self.close_gripper()
 				elif cmd[1] == "ROTATE" or cmd[1] == "TURN" or cmd[1] == "SPIN":
 					self.rotate_gripper(self.step_size)
 				elif cmd[1] == "HOME":
@@ -262,7 +277,7 @@ class RobotMover(object):
 				else:
 					try:
 						distance = float(cmd[1]) / 1000
-						self.set_gripper(distance)
+						self.set_gripper_distance(distance)
 					except ValueError:
 						rospy.loginfo('Invalid gripper command "%s" received, available commands are:', cmd[1])
 						rospy.loginfo('OPEN, CLOSE, ROTATE or distance between fingers in units mm between 0-80')
@@ -272,10 +287,10 @@ class RobotMover(object):
 						self.rotate_gripper(self.step_size, False)
 						
 		elif cmd[0] == "OPEN":
-			self.set_gripper(0.08)
-		elif cmd[0] == ("CLOSE" or "GRASP"):
+			self.open_gripper()
+		elif cmd[0] == "CLOSE" or cmd[0] == "GRASP":
 			print(cmd)
-			self.set_gripper(0)
+			self.close_gripper()
 		elif cmd[0] == "ROTATE" or cmd[0] == "TURN" or cmd[0] == "SPIN":
 			if len(cmd) < 2:
 				self.rotate_gripper(self.step_size)
@@ -319,6 +334,7 @@ class RobotMover(object):
 			self.saved_positions[cmd[2]] = self.move_group.get_current_pose().pose
 			tfh.write_position(self.saved_positions)
 			self.saved_positions = tfh.load_position()
+			print("Position " + cmd[2] + " saved.")
 			
 			
 		#_______________REMOVE ROBOT POSITION____________________
@@ -326,6 +342,7 @@ class RobotMover(object):
 			if cmd[2] in self.saved_positions.keys():
 				tfh.deleteItem('positions.txt', cmd[2])
 				self.saved_positions = tfh.load_position()
+				print("Position " + cmd[2] + " removed.")
 			else:
 				rospy.loginfo("Not enough arguments, expected REMOVE POSITION [position name]")
 			
@@ -344,27 +361,49 @@ class RobotMover(object):
 			else:
 				print("RECORD error: give task name.")
 		
-		elif cmd[0] in self.saved_tasks.keys():
-			step_size_before_task = self.step_size
-			self.step_size = self.saved_tasks[cmd[0]]["start_step_size"]
-			start_pose = self.saved_tasks[cmd[0]]["start_pose"]
-			(plan, fraction) = self.move_group.compute_cartesian_path([start_pose], 0.01, 0.0)
-			self.move_group.execute(plan, wait=True)
-			for step in self.saved_tasks[cmd[0]]["moves"]:
-				print("calling handle received command with params", step)
-				self.handle_received_command(step)
-			self.step_size = step_size_before_task
+		elif cmd[0] == 'TASK' or cmd[0] == 'DO' or cmd[0] == 'PLAY':
+			if len(cmd) > 1:
+				if cmd[1] in self.saved_tasks.keys():
+					step_size_before_task = self.step_size
+					self.step_size = self.saved_tasks[cmd[1]]["start_step_size"]
+					start_pose = self.saved_tasks[cmd[1]]["start_pose"]
+					(plan, fraction) = self.move_group.compute_cartesian_path([start_pose], 0.01, 0.0)
+					self.move_group.execute(plan, wait=True)
+					for step in self.saved_tasks[cmd[1]]["moves"]:
+						print("calling handle received command with params", step)
+						self.handle_received_command(step)
+					self.step_size = step_size_before_task
+				else:
+					print("Executing task failed: Task name " + cmd[1] + " not in recorded tasks.")
+			else:
+				print("Executing task failed: Correct command: TASK/DO/PLAY [task name]")
 
 
 		#___________________TEXT FILE HANDLING______________________
-		elif cmd[0] == 'LIST' and cmd[1] == 'TASKS':
-			print("")
-			print("Saved tasks:")
-			print("")
-			self.saved_tasks = tfh.load_task()
-			for taskname in self.saved_tasks:
-				print(taskname)	
-			print("")
+		#___________________LIST TASKS/POSITIONS______________________
+		elif cmd[0] == 'LIST':
+			if len(cmd) != 1:
+				if cmd[1] == 'TASKS':
+					print("")
+					print("Saved tasks:")
+					print("")
+					self.saved_tasks = tfh.load_task()
+					for taskname in self.saved_tasks:
+						print(taskname)	
+					print("")
+				elif cmd[1] == 'POSITIONS':
+					print("")
+					print("Saved positions:")
+					print("")
+					self.saved_positions = tfh.load_position()
+					for position in self.saved_positions:
+						print(position)
+					print("")
+				else:
+					print("Listing failed. List tasks: LIST TASKS. List positions: LIST POSITIONS.")
+			else:
+				print("Listing failed. List tasks: LIST TASKS. List positions: LIST POSITIONS.")
+
 
 		elif cmd[0] == 'REMOVE':
 			if len(cmd) < 2:
@@ -380,7 +419,7 @@ class RobotMover(object):
 					print("REMOVE error: No task named " + cmd[1] + " found. Use LIST TASK command too see tasks.")
 				
 		else:
-			rospy.loginfo("Command not found.")
+			print("Command not found.")
 			
 
 def get_number(words):
