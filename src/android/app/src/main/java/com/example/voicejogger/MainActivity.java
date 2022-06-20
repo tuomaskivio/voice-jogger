@@ -1,13 +1,17 @@
 package com.example.voicejogger;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.Bundle;
 
 import java.io.IOException;
@@ -21,15 +25,11 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.util.Patterns;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.SeekBar;
-import android.widget.TextView;
 import android.widget.ToggleButton;
 
 public class MainActivity extends AppCompatActivity {
@@ -37,7 +37,6 @@ public class MainActivity extends AppCompatActivity {
     private int port = 50005;
     private String ip_addr = "192.168.1.227";
     private String sco_state_pattern = "";
-
 
     AudioRecord recorder;
 
@@ -80,38 +79,30 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        checkPermission();
+
         ImageButton settingButton = (ImageButton) findViewById(R.id.button_settings);
         ToggleButton toggleButton = (ToggleButton) findViewById(R.id.togglebutton_startstop);
 
         settingButton.setOnClickListener(settingListener);
         toggleButton.setOnCheckedChangeListener(toggleListener);
 
-        SeekBar sk = (SeekBar) findViewById(R.id.seekbar);
-        sk.setProgress(0);
-
-        sk.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                TextView t=(TextView)findViewById(R.id.seekbar_text);
-                t.setText(String.valueOf(i));
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                Log.d("onStartTrackingTouch", Integer.toString(seekBar.getProgress()));
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                Log.d("onStopTrackingTouch", Integer.toString(seekBar.getProgress()));
-            }
-        });
-
         //Clear old shared preference
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         preferences.edit().clear().apply();
 
+    }
+
+    public void checkPermission() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+            {
+                return;
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{
+                        Manifest.permission.RECORD_AUDIO,}, 1);
+            }
+        }
     }
 
     @Override
@@ -151,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
             if(isChecked)
             {
                 Log.d("onCheckedChanged","Check ON");
+                checkPermission();
                 startTransmission();
             }
             else
