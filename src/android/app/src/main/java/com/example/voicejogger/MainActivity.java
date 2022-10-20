@@ -1,8 +1,5 @@
 package com.example.voicejogger;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,19 +7,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.media.AudioManager;
-import android.os.Build;
-import android.os.Bundle;
-
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
@@ -31,6 +20,16 @@ import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ToggleButton;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -87,21 +86,27 @@ public class MainActivity extends AppCompatActivity {
         settingButton.setOnClickListener(settingListener);
         toggleButton.setOnCheckedChangeListener(toggleListener);
 
-        //Clear old shared preference
+        // Add default values to shared preferences
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        preferences.edit().clear().apply();
+        SharedPreferences.Editor editor = preferences.edit();
+        if (!preferences.contains("port")) {
+            editor.putInt("port", port);
+        }
+        if (!preferences.contains("rate")) {
+            editor.putInt("rate", sampleRate);
+        }
+        if (!preferences.contains("ip")) {
+            editor.putString("ip", ip_addr);
+        }
+        editor.apply();
 
     }
 
     public void checkPermission() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
-            {
-                return;
-            } else {
-                ActivityCompat.requestPermissions(this, new String[]{
-                        Manifest.permission.RECORD_AUDIO,}, 1);
-            }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.RECORD_AUDIO,}, 1);
         }
     }
 
@@ -136,23 +141,20 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private final CompoundButton.OnCheckedChangeListener toggleListener = new CompoundButton.OnCheckedChangeListener() {
-        @Override
-        public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
-            if(isChecked)
-            {
-                Log.d("onCheckedChanged","Check ON");
-                checkPermission();
-                startTransmission();
-            }
-            else
-            {
-                Log.d("onCheckedChanged","Check OFF");
-                stopTransmission();
-                // Hide Bluetooth icon
-                ImageView imageView = (ImageView) findViewById(R.id.image_bluetooth);
-                imageView.setVisibility(View.INVISIBLE);
-            }
+    private final CompoundButton.OnCheckedChangeListener toggleListener = (compoundButton, isChecked) -> {
+        if(isChecked)
+        {
+            Log.d("onCheckedChanged","Check ON");
+            checkPermission();
+            startTransmission();
+        }
+        else
+        {
+            Log.d("onCheckedChanged","Check OFF");
+            stopTransmission();
+            // Hide Bluetooth icon
+            ImageView imageView = (ImageView) findViewById(R.id.image_bluetooth);
+            imageView.setVisibility(View.INVISIBLE);
         }
     };
 
@@ -180,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
             audioManager.startBluetoothSco();
 
         }
-    };
+    }
 
     private void stopTransmission()
     {
@@ -200,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
             recorder.release();
             Log.d("stopTransmission","Recorder released");
         }
-    };
+    }
 
     public void startStreaming() {
 
