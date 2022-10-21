@@ -2,6 +2,7 @@ package com.example.voicejogger;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
@@ -10,6 +11,7 @@ import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -54,7 +56,17 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         setContentView(binding.getRoot());
 
         ToggleButton toggleButton = binding.togglebuttonStartstop;
+        TextView textView = binding.textView;
+
         toggleButton.setOnCheckedChangeListener(toggleListener);
+        textView.setOnClickListener(view -> {
+            // Navigate to setting activity
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            intent.putExtra("ip", ip_addr);
+            intent.putExtra("port", port);
+            intent.putExtra("rate", sampleRate);
+            startActivity(intent);
+        });
     }
 
     private final CompoundButton.OnCheckedChangeListener toggleListener = (compoundButton, isChecked) -> {
