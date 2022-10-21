@@ -52,22 +52,29 @@ class Recognizer:
         audio_float32 = int2float(audio_int16)
         output = self.vad(audio_float32, self.rate)
         if output > 0.5:
-            #print("Speec Detected")
+            #print("Speech Detected")
             self.start_speech = True
             self.speech_start_idx.append(len(self.audio_chunks) - 1)
             self.time_since_last_speech = time.time()
-        else:
-            if self.start_speech and time.time() - self.time_since_last_speech > self.speech_end_interval:
-                #print("Speech Ended")
-                start_idx = np.min(self.speech_start_idx) - self.chunk_offset
-                end_idx = np.max(self.speech_start_idx) + self.chunk_offset
-                #print(f"Speech Index Interval: [{start_idx}, {end_idx}]")
-                self.start_speech = False
+        if self.start_speech: 
+            start_idx = np.min(self.speech_start_idx) - self.chunk_offset
+            end_idx = np.max(self.speech_start_idx) + self.chunk_offset
+            #print(f"Speech Index Interval: [{start_idx}, {end_idx}]")
+            
+            speech = b''.join(self.audio_chunks[start_idx: end_idx])
+            # Convert speech to text
+            self.rec.AcceptWaveform(speech)
+            text = json.loads(self.rec.FinalResult())["text"]
+
+            if 'stop' in text:
                 self.speech_start_idx = []
-                
-                speech = b''.join(self.audio_chunks[start_idx: end_idx])
-                # Convert speech to text
-                self.rec.AcceptWaveform(speech)
-                words = json.loads(self.rec.FinalResult())["text"].split(' ')
-        
+                words = ['stop','stop']
+                self.start_speech = False
+
+            if time.time() - self.time_since_last_speech > self.speech_end_interval:
+                self.speech_start_idx = []
+                words = text.split(' ')
+                #print("Speech Ended")
+                self.start_speech = False
+
         return words
