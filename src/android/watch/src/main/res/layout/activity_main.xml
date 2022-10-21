@@ -18,20 +18,12 @@
         android:textSize="20sp"
         android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="190dp"
-        android:text="@string/hello_world" />
-
     <ToggleButton
         android:id="@+id/togglebutton_startstop"
         android:layout_width="130dp"
         android:layout_height="150dp"
         android:layout_gravity="center"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="20dp"
         android:background="@drawable/startstop_selector"
         android:textOff="@null"
         android:textOn="@null" />

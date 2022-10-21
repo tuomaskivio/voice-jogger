@@ -9,6 +9,12 @@ import android.util.Log;
 import android.util.Patterns;
 import android.widget.EditText;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.wearable.DataClient;
+import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.Wearable;
+
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -17,6 +23,8 @@ public class SettingsActivity extends AppCompatActivity {
     EditText edittext_port;
     EditText edittext_rate;
     EditText edittext_ip;
+
+    DataClient mDataClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +71,10 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        mDataClient = Wearable.getDataClient(this);
+        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/voice_jogger_pref");
+        putDataMapReq.setUrgent();
+
         EditText edittext_port = (EditText) findViewById(R.id.edittext_port);
         EditText edittext_ip = (EditText) findViewById(R.id.edittext_ip);
         EditText edittext_rate = (EditText) findViewById(R.id.edittext_rate);
@@ -77,12 +89,16 @@ public class SettingsActivity extends AppCompatActivity {
         // Only put valid data values in Shared Preference
         try {
             int to_set_port = Integer.parseInt(port);
-            if(to_set_port>49152 && to_set_port<=65534)
+            if(to_set_port>49152 && to_set_port<=65534) {
                 editor.putInt("port",to_set_port);
+                putDataMapReq.getDataMap().putInt("port", to_set_port);
+            }
             int to_set_rate = Integer.parseInt(rate);
 
-            if(Arrays.asList(new Integer[]{8000, 16000}).contains(to_set_rate))
+            if(Arrays.asList(new Integer[]{8000, 16000}).contains(to_set_rate)) {
                 editor.putInt("rate",Integer.parseInt(rate));
+                putDataMapReq.getDataMap().putInt("rate", Integer.parseInt(rate));
+            }
 
         } catch (NumberFormatException e) {
             Log.d("Settings", "Invalid port/rate number specified");
@@ -91,8 +107,9 @@ public class SettingsActivity extends AppCompatActivity {
         if(Patterns.IP_ADDRESS.matcher(ip).matches())
         {
             editor.putString("ip", ip);
+            putDataMapReq.getDataMap().putString("ip", ip);
         }
-
+        mDataClient.putDataItem(putDataMapReq.asPutDataRequest());
         editor.apply();
 
         // return back to Main

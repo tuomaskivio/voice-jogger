@@ -2,19 +2,29 @@ package com.example.voicejogger;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 import com.example.voicejogger.databinding.ActivityMainBinding;
+import com.google.android.gms.wearable.DataClient;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.Wearable;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -22,14 +32,12 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements DataClient.OnDataChangedListener {
 
     private int port = 50005;
     private String ip_addr = "192.168.1.193";
 
     private boolean status = false;
-
-    private TextView mTextView;
 
     AudioRecord recorder;
 
@@ -45,7 +53,6 @@ public class MainActivity extends Activity {
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        mTextView = binding.text;
         ToggleButton toggleButton = binding.togglebuttonStartstop;
         toggleButton.setOnCheckedChangeListener(toggleListener);
     }
@@ -54,17 +61,46 @@ public class MainActivity extends Activity {
         if(isChecked)
         {
             Log.d("onCheckedChanged","Check ON");
-            mTextView.setText("Transmission on");
             checkPermission();
             startTransmission();
         }
         else
         {
             Log.d("onCheckedChanged","Check OFF");
-            mTextView.setText("Transmission off");
             stopTransmission();
         }
     };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Wearable.getDataClient(this).addListener(this);
+
+        // Get data from settings activity
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String get_ip = preferences.getString("ip", "");
+        int get_port = preferences.getInt("port", -1);
+        int get_rate = preferences.getInt("rate", -1);
+
+        if (get_port != -1)
+        {
+            port = get_port;
+        }
+
+        if (get_rate != -1)
+        {
+            sampleRate = get_rate;
+        }
+
+        if(!get_ip.equals(""))
+        {
+            ip_addr = get_ip;
+        }
+
+        Log.d("onResume", "Server Port set to: " + port);
+        Log.d("onResume", "Server IP set to: " + ip_addr);
+        Log.d("onResume", "Audio sampling rate set to: " + sampleRate);
+    }
 
     public void checkPermission() {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
@@ -130,5 +166,34 @@ public class MainActivity extends Activity {
             }
         });
         streamThread.start();
+    }
+
+    @Override
+    public void onDataChanged(@NonNull DataEventBuffer dataEventBuffer) {
+        for (DataEvent event : dataEventBuffer) {
+            if (event.getType() == DataEvent.TYPE_CHANGED) {
+                // DataItem changed
+                DataItem item = event.getDataItem();
+                if (item.getUri().getPath().compareTo("/voice_jogger_pref") == 0) {
+
+                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                    SharedPreferences.Editor editor = preferences.edit();
+
+                    DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                    port = dataMap.getInt("port");
+                    sampleRate = dataMap.getInt("rate");
+                    ip_addr = dataMap.getString("ip");
+
+                    Log.d("onDataChanged", "Server Port set to: " + port);
+                    Log.d("onDataChanged", "Server IP set to: " + ip_addr);
+                    Log.d("onDataChanged", "Audio sampling rate set to: " + sampleRate);
+
+                    editor.putInt("port",port);
+                    editor.putInt("rate",sampleRate);
+                    editor.putString("ip", ip_addr);
+                    editor.apply();
+                }
+            }
+        }
     }
 }
