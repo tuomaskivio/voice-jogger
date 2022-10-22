@@ -2,12 +2,17 @@ package com.example.voicejogger;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -33,6 +38,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.function.IntBinaryOperator;
 
 public class MainActivity extends Activity implements DataClient.OnDataChangedListener {
 
@@ -48,12 +54,17 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
     private final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     int minBufSize;
 
+    ConnectivityManager connectivityManager;
+    ConnectivityManager.NetworkCallback callback;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
         ToggleButton toggleButton = binding.togglebuttonStartstop;
         TextView textView = binding.textView;
@@ -67,6 +78,29 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
             intent.putExtra("rate", sampleRate);
             startActivity(intent);
         });
+    }
+
+    private void requestWifi(Runnable onAvailableFunction) {
+        callback = new ConnectivityManager.NetworkCallback() {
+            public void onAvailable(Network network) {
+                super.onAvailable(network);
+                // The Wi-Fi network has been acquired, bind it to use this network by default
+                connectivityManager.bindProcessToNetwork(network);
+                Log.d("requestWifi", "Wifi connection available");
+                onAvailableFunction.run();
+            }
+
+            public void onLost(Network network) {
+                super.onLost(network);
+                // The Wi-Fi network has been disconnected
+                Log.d("requestWifi", "Wifi connection lost");
+            }
+        };
+        Log.d("requestWifi", "Wifi connection requested");
+        connectivityManager.requestNetwork(
+                new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build(),
+                callback
+        );
     }
 
     private final CompoundButton.OnCheckedChangeListener toggleListener = (compoundButton, isChecked) -> {
@@ -124,13 +158,19 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
 
     private void startTransmission() {
         if (!status) {
-            status = true;
-            startStreaming();
+
+            requestWifi(() -> {
+                status = true;
+                startStreaming();
+            });
         }
     }
 
     private void stopTransmission() {
         status = false;
+        Log.d("stopTransmission", "Wifi connectivity released");
+        connectivityManager.bindProcessToNetwork(null);
+        connectivityManager.unregisterNetworkCallback(callback);
 
         if (recorder != null){
             recorder.release();
