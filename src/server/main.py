@@ -44,9 +44,9 @@ try:
         
         words = rec.speech_to_text(data)
         if len(words) > 1:
-            print(words)
             # mode: step mode. Faster response time, because in the direction and distance mode, distance needs to be recognized.
-            cmd = commandCreator.getCommand(words)
+            commandCreator.original_words = words
+            cmd = commandCreator.getCommand(True)
 
         if cmd is not None:
             #start_robot means start sending commands

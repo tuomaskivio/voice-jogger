@@ -1,43 +1,41 @@
 package com.example.voicejogger;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.CompoundButton;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ToggleButton;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
-import android.preference.PreferenceManager;
-import android.util.Log;
-import android.util.Patterns;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.SeekBar;
-import android.widget.TextView;
-import android.widget.ToggleButton;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
     private int port = 50005;
     private String ip_addr = "192.168.1.227";
     private String sco_state_pattern = "";
-
 
     AudioRecord recorder;
 
@@ -80,38 +78,36 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        checkPermission();
+
         ImageButton settingButton = (ImageButton) findViewById(R.id.button_settings);
         ToggleButton toggleButton = (ToggleButton) findViewById(R.id.togglebutton_startstop);
 
         settingButton.setOnClickListener(settingListener);
         toggleButton.setOnCheckedChangeListener(toggleListener);
 
-        SeekBar sk = (SeekBar) findViewById(R.id.seekbar);
-        sk.setProgress(0);
-
-        sk.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                TextView t=(TextView)findViewById(R.id.seekbar_text);
-                t.setText(String.valueOf(i));
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                Log.d("onStartTrackingTouch", Integer.toString(seekBar.getProgress()));
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                Log.d("onStopTrackingTouch", Integer.toString(seekBar.getProgress()));
-            }
-        });
-
-        //Clear old shared preference
+        // Add default values to shared preferences
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        preferences.edit().clear().apply();
+        SharedPreferences.Editor editor = preferences.edit();
+        if (!preferences.contains("port")) {
+            editor.putInt("port", port);
+        }
+        if (!preferences.contains("rate")) {
+            editor.putInt("rate", sampleRate);
+        }
+        if (!preferences.contains("ip")) {
+            editor.putString("ip", ip_addr);
+        }
+        editor.apply();
 
+    }
+
+    public void checkPermission() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.RECORD_AUDIO,}, 1);
+        }
     }
 
     @Override
@@ -145,22 +141,20 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private final CompoundButton.OnCheckedChangeListener toggleListener = new CompoundButton.OnCheckedChangeListener() {
-        @Override
-        public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
-            if(isChecked)
-            {
-                Log.d("onCheckedChanged","Check ON");
-                startTransmission();
-            }
-            else
-            {
-                Log.d("onCheckedChanged","Check OFF");
-                stopTransmission();
-                // Hide Bluetooth icon
-                ImageView imageView = (ImageView) findViewById(R.id.image_bluetooth);
-                imageView.setVisibility(View.INVISIBLE);
-            }
+    private final CompoundButton.OnCheckedChangeListener toggleListener = (compoundButton, isChecked) -> {
+        if(isChecked)
+        {
+            Log.d("onCheckedChanged","Check ON");
+            checkPermission();
+            startTransmission();
+        }
+        else
+        {
+            Log.d("onCheckedChanged","Check OFF");
+            stopTransmission();
+            // Hide Bluetooth icon
+            ImageView imageView = (ImageView) findViewById(R.id.image_bluetooth);
+            imageView.setVisibility(View.INVISIBLE);
         }
     };
 
@@ -188,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
             audioManager.startBluetoothSco();
 
         }
-    };
+    }
 
     private void stopTransmission()
     {
@@ -208,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
             recorder.release();
             Log.d("stopTransmission","Recorder released");
         }
-    };
+    }
 
     public void startStreaming() {
 
