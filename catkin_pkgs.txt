@@ -1,0 +1,929 @@
+franka_core_msgs:
+  build_depend:
+  - message_generation
+  - std_msgs
+  - geometry_msgs
+  - sensor_msgs
+  - control_msgs
+  - franka_msgs
+  - actionlib_msgs
+  run_depend:
+  - message_runtime
+  - std_msgs
+  - franka_msgs
+  - geometry_msgs
+  - control_msgs
+  - sensor_msgs
+  - actionlib_msgs
+franka_interface:
+  build_depend:
+  - message_generation
+  - eigen
+  - franka_control
+  - controller_interface
+  - dynamic_reconfigure
+  - franka_hw
+  - controller_manager
+  - franka_core_msgs
+  - franka_msgs
+  - geometry_msgs
+  - hardware_interface
+  - libfranka
+  - pluginlib
+  - realtime_tools
+  - roscpp
+  run_depend:
+  - franka_control
+  - franka_description
+  - panda_moveit_config
+  - franka_moveit
+  - rospy
+  - controller_interface
+  - dynamic_reconfigure
+  - franka_hw
+  - controller_manager
+  - franka_core_msgs
+  - franka_msgs
+  - geometry_msgs
+  - hardware_interface
+  - libfranka
+  - pluginlib
+  - realtime_tools
+  - roscpp
+franka_ros_controllers:
+  build_depend:
+  - message_generation
+  - eigen
+  - controller_interface
+  - dynamic_reconfigure
+  - franka_hw
+  - geometry_msgs
+  - hardware_interface
+  - franka_core_msgs
+  - libfranka
+  - pluginlib
+  - realtime_tools
+  - roscpp
+  run_depend:
+  - franka_control
+  - franka_description
+  - message_runtime
+  - rospy
+  - controller_interface
+  - dynamic_reconfigure
+  - franka_hw
+  - geometry_msgs
+  - hardware_interface
+  - franka_core_msgs
+  - libfranka
+  - pluginlib
+  - realtime_tools
+  - roscpp
+franka_ros_interface:
+  run_depend:
+  - franka_interface
+  - franka_moveit
+  - franka_msgs
+  - franka_ros_controllers
+  - franka_tools
+geometric_shapes:
+  build_depend:
+  - assimp-dev
+  - boost
+  - eigen
+  - eigen_stl_containers
+  - libconsole-bridge-dev
+  - fcl
+  - libqhull
+  - octomap
+  - pkg-config
+  - random_numbers
+  - resource_retriever
+  - shape_msgs
+  - visualization_msgs
+  run_depend:
+  - assimp
+  - boost
+  - eigen
+  - eigen_stl_containers
+  - libconsole-bridge-dev
+  - fcl
+  - libqhull
+  - octomap
+  - random_numbers
+  - resource_retriever
+  - shape_msgs
+  - visualization_msgs
+  - assimp-dev
+moveit:
+  run_depend:
+  - moveit_commander
+  - moveit_core
+  - moveit_planners
+  - moveit_plugins
+  - moveit_ros
+  - moveit_setup_assistant
+moveit_msgs:
+  build_depend:
+  - message_generation
+  - octomap_msgs
+  - actionlib_msgs
+  - sensor_msgs
+  - geometry_msgs
+  - trajectory_msgs
+  - shape_msgs
+  - object_recognition_msgs
+  - std_msgs
+  run_depend:
+  - message_runtime
+  - message_generation
+  - octomap_msgs
+  - actionlib_msgs
+  - sensor_msgs
+  - geometry_msgs
+  - trajectory_msgs
+  - shape_msgs
+  - object_recognition_msgs
+  - std_msgs
+moveit_planners:
+  run_depend:
+  - chomp_motion_planner
+  - moveit_planners_chomp
+  - moveit_planners_ompl
+  - pilz_industrial_motion_planner
+moveit_plugins:
+  run_depend:
+  - moveit_simple_controller_manager
+  - moveit_fake_controller_manager
+  - moveit_ros_control_interface
+moveit_resources:
+  run_depend:
+  - moveit_resources_fanuc_description
+  - moveit_resources_fanuc_moveit_config
+  - moveit_resources_panda_description
+  - moveit_resources_panda_moveit_config
+  - moveit_resources_pr2_description
+  - joint_state_publisher
+  - robot_state_publisher
+moveit_resources_fanuc_description:
+moveit_resources_fanuc_moveit_config:
+  run_depend:
+  - joint_state_publisher
+  - robot_state_publisher
+  - tf2_ros
+  - xacro
+  - moveit_resources_fanuc_description
+moveit_commander:
+  build_depend:
+  - python3
+  run_depend:
+  - geometry_msgs
+  - moveit_msgs
+  - moveit_ros_planning_interface
+  - python3-pyassimp
+  - rospy
+  - sensor_msgs
+  - shape_msgs
+  - tf
+  - python3
+moveit_resources_panda_description:
+moveit_resources_panda_moveit_config:
+  run_depend:
+  - joint_state_publisher
+  - joint_state_publisher_gui
+  - robot_state_publisher
+  - rviz
+  - tf2_ros
+  - xacro
+  - moveit_resources_panda_description
+moveit_resources_pr2_description:
+moveit_resources_prbt_moveit_config:
+  run_depend:
+  - joint_state_publisher
+  - robot_state_publisher
+  - xacro
+  - rviz
+  - moveit_resources_prbt_support
+  - moveit_resources_prbt_ikfast_manipulator_plugin
+moveit_resources_prbt_pg70_support:
+  run_depend:
+  - moveit_resources_prbt_support
+  - moveit_resources_prbt_ikfast_manipulator_plugin
+  - moveit_resources_prbt_moveit_config
+  - xacro
+moveit_resources_prbt_support:
+  run_depend:
+  - xacro
+moveit_ros:
+  run_depend:
+  - moveit_ros_perception
+  - moveit_ros_planning
+  - moveit_ros_warehouse
+  - moveit_ros_benchmarks
+  - moveit_ros_robot_interaction
+  - moveit_ros_planning_interface
+  - moveit_ros_visualization
+  - moveit_ros_manipulation
+  - moveit_ros_move_group
+moveit_runtime:
+  run_depend:
+  - moveit_core
+  - moveit_planners
+  - moveit_plugins
+  - moveit_ros_manipulation
+  - moveit_ros_move_group
+  - moveit_ros_perception
+  - moveit_ros_planning
+  - moveit_ros_planning_interface
+  - moveit_ros_warehouse
+panda_moveit_config:
+  run_depend:
+  - franka_description
+  - moveit_ros_move_group
+  - moveit_fake_controller_manager
+  - moveit_kinematics
+  - moveit_planners_ompl
+  - moveit_ros_visualization
+  - joint_state_publisher
+  - joint_state_publisher_gui
+  - robot_state_publisher
+  - xacro
+  - topic_tools
+rviz_visual_tools:
+  build_depend:
+  - rviz
+  - sensor_msgs
+  - tf2_eigen
+  - tf2_ros
+  - tf2_geometry_msgs
+  - geometry_msgs
+  - shape_msgs
+  - roscpp
+  - visualization_msgs
+  - graph_msgs
+  - std_msgs
+  - trajectory_msgs
+  - roslint
+  - eigen_stl_containers
+  - libogre-dev
+  - interactive_markers
+  - libqt5x11extras5-dev
+  run_depend:
+  - rviz
+  - sensor_msgs
+  - tf2_eigen
+  - tf2_ros
+  - tf2_geometry_msgs
+  - geometry_msgs
+  - shape_msgs
+  - roscpp
+  - visualization_msgs
+  - graph_msgs
+  - std_msgs
+  - trajectory_msgs
+  - roslint
+  - eigen_stl_containers
+  - libogre-dev
+  - interactive_markers
+  - libqt5x11extras5-dev
+srdfdom:
+  build_depend:
+  - cmake_modules
+  - libconsole-bridge-dev
+  - boost
+  - urdf
+  - tinyxml2
+  run_depend:
+  - urdfdom_py
+  - boost
+  - urdf
+  - tinyxml2
+moveit_core:
+  build_depend:
+  - assimp
+  - boost
+  - eigen
+  - bullet
+  - python3
+  - eigen_stl_containers
+  - fcl
+  - geometric_shapes
+  - geometry_msgs
+  - kdl_parser
+  - libconsole-bridge-dev
+  - urdf
+  - liburdfdom-dev
+  - liburdfdom-headers-dev
+  - moveit_msgs
+  - octomap
+  - octomap_msgs
+  - pybind11_catkin
+  - random_numbers
+  - roslib
+  - rostime
+  - rosconsole
+  - sensor_msgs
+  - shape_msgs
+  - srdfdom
+  - std_msgs
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - trajectory_msgs
+  - visualization_msgs
+  - xmlrpcpp
+  - pluginlib
+  run_depend:
+  - assimp
+  - boost
+  - eigen
+  - bullet
+  - python3
+  - eigen_stl_containers
+  - fcl
+  - geometric_shapes
+  - geometry_msgs
+  - kdl_parser
+  - libconsole-bridge-dev
+  - urdf
+  - liburdfdom-dev
+  - liburdfdom-headers-dev
+  - moveit_msgs
+  - octomap
+  - octomap_msgs
+  - pybind11_catkin
+  - random_numbers
+  - roslib
+  - rostime
+  - rosconsole
+  - sensor_msgs
+  - shape_msgs
+  - srdfdom
+  - std_msgs
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - trajectory_msgs
+  - visualization_msgs
+  - xmlrpcpp
+  - pluginlib
+chomp_motion_planner:
+  build_depend:
+  - roscpp
+  - moveit_core
+moveit_chomp_optimizer_adapter:
+  build_depend:
+  - moveit_core
+  - chomp_motion_planner
+  - pluginlib
+  run_depend:
+  - moveit_core
+  - chomp_motion_planner
+  - pluginlib
+moveit_resources_prbt_ikfast_manipulator_plugin:
+  build_depend:
+  - eigen_conversions
+  - moveit_core
+  - pluginlib
+  - roscpp
+  - tf2_eigen
+  - tf2_kdl
+  run_depend:
+  - eigen_conversions
+  - moveit_core
+  - pluginlib
+  - roscpp
+  - tf2_kdl
+moveit_ros_occupancy_map_monitor:
+  build_depend:
+  - eigen
+  - moveit_core
+  - moveit_msgs
+  - octomap
+  - pluginlib
+  - tf2_ros
+  - geometric_shapes
+  run_depend:
+  - moveit_core
+  - moveit_msgs
+  - octomap
+  - pluginlib
+  - tf2_ros
+  - geometric_shapes
+moveit_ros_planning:
+  build_depend:
+  - eigen
+  - moveit_core
+  - moveit_ros_occupancy_map_monitor
+  - moveit_msgs
+  - message_filters
+  - pluginlib
+  - actionlib
+  - dynamic_reconfigure
+  - rosconsole
+  - roscpp
+  - srdfdom
+  - urdf
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_msgs
+  - tf2_ros
+  run_depend:
+  - moveit_core
+  - moveit_ros_occupancy_map_monitor
+  - moveit_msgs
+  - message_filters
+  - pluginlib
+  - actionlib
+  - dynamic_reconfigure
+  - rosconsole
+  - roscpp
+  - srdfdom
+  - urdf
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_msgs
+  - tf2_ros
+moveit_fake_controller_manager:
+  build_depend:
+  - moveit_core
+  - moveit_ros_planning
+  - pluginlib
+  - roscpp
+  run_depend:
+  - moveit_core
+  - moveit_ros_planning
+  - pluginlib
+  - roscpp
+moveit_kinematics:
+  build_depend:
+  - roscpp
+  - moveit_core
+  - pluginlib
+  - eigen
+  - tf2
+  - tf2_kdl
+  - liborocos-kdl-dev
+  run_depend:
+  - liburdfdom-tools
+  - python3-lxml
+  - python3-yaml
+  - roscpp
+  - moveit_core
+  - pluginlib
+  - eigen
+  - tf2
+  - tf2_kdl
+  - liborocos-kdl-dev
+moveit_planners_ompl:
+  build_depend:
+  - moveit_core
+  - ompl
+  - moveit_ros_planning
+  - dynamic_reconfigure
+  - rosconsole
+  - roscpp
+  - tf2
+  - pluginlib
+  run_depend:
+  - moveit_core
+  - ompl
+  - moveit_ros_planning
+  - dynamic_reconfigure
+  - rosconsole
+  - roscpp
+  - tf2
+  - pluginlib
+moveit_ros_move_group:
+  build_depend:
+  - actionlib
+  - moveit_core
+  - moveit_ros_planning
+  - roscpp
+  - tf2
+  - tf2_geometry_msgs
+  - tf2_ros
+  - pluginlib
+  - std_srvs
+  run_depend:
+  - moveit_kinematics
+  - actionlib
+  - moveit_core
+  - moveit_ros_planning
+  - roscpp
+  - tf2
+  - tf2_geometry_msgs
+  - tf2_ros
+  - pluginlib
+  - std_srvs
+moveit_ros_manipulation:
+  build_depend:
+  - eigen
+  - actionlib
+  - dynamic_reconfigure
+  - moveit_core
+  - moveit_ros_move_group
+  - moveit_ros_planning
+  - moveit_msgs
+  - roscpp
+  - rosconsole
+  - tf2_eigen
+  - pluginlib
+  run_depend:
+  - actionlib
+  - dynamic_reconfigure
+  - moveit_core
+  - moveit_ros_move_group
+  - moveit_ros_planning
+  - moveit_msgs
+  - roscpp
+  - rosconsole
+  - tf2_eigen
+  - pluginlib
+moveit_ros_perception:
+  build_depend:
+  - eigen
+  - moveit_core
+  - roscpp
+  - rosconsole
+  - urdf
+  - message_filters
+  - pluginlib
+  - image_transport
+  - glut
+  - libglew-dev
+  - libomp-dev
+  - opengl
+  - cv_bridge
+  - sensor_msgs
+  - moveit_msgs
+  - object_recognition_msgs
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_ros
+  - moveit_ros_occupancy_map_monitor
+  - moveit_ros_planning
+  - nodelet
+  run_depend:
+  - moveit_core
+  - roscpp
+  - rosconsole
+  - urdf
+  - message_filters
+  - pluginlib
+  - image_transport
+  - glut
+  - libglew-dev
+  - libomp-dev
+  - opengl
+  - cv_bridge
+  - sensor_msgs
+  - moveit_msgs
+  - object_recognition_msgs
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_ros
+  - moveit_ros_occupancy_map_monitor
+  - moveit_ros_planning
+  - nodelet
+moveit_ros_robot_interaction:
+  build_depend:
+  - moveit_ros_planning
+  - roscpp
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_ros
+  - interactive_markers
+  run_depend:
+  - moveit_ros_planning
+  - roscpp
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_ros
+  - interactive_markers
+moveit_ros_warehouse:
+  build_depend:
+  - warehouse_ros
+  - moveit_ros_planning
+  - roscpp
+  - rosconsole
+  - tf2_eigen
+  - tf2_ros
+  run_depend:
+  - warehouse_ros
+  - moveit_ros_planning
+  - roscpp
+  - rosconsole
+  - tf2_eigen
+  - tf2_ros
+moveit_ros_benchmarks:
+  build_depend:
+  - moveit_ros_planning
+  - moveit_ros_warehouse
+  - roscpp
+  - tf2_eigen
+  - pluginlib
+  run_depend:
+  - moveit_ros_planning
+  - moveit_ros_warehouse
+  - roscpp
+  - tf2_eigen
+  - pluginlib
+moveit_ros_planning_interface:
+  build_depend:
+  - eigen
+  - moveit_ros_planning
+  - moveit_ros_warehouse
+  - moveit_ros_move_group
+  - moveit_ros_manipulation
+  - roscpp
+  - rospy
+  - rosconsole
+  - actionlib
+  - geometry_msgs
+  - moveit_msgs
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_ros
+  - python3
+  - eigenpy
+  run_depend:
+  - moveit_ros_planning
+  - moveit_ros_warehouse
+  - moveit_ros_move_group
+  - moveit_ros_manipulation
+  - roscpp
+  - rospy
+  - rosconsole
+  - actionlib
+  - geometry_msgs
+  - moveit_msgs
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_ros
+  - python3
+  - eigenpy
+moveit_planners_chomp:
+  build_depend:
+  - roscpp
+  - moveit_core
+  - pluginlib
+  - chomp_motion_planner
+  run_depend:
+  - roscpp
+  - moveit_core
+  - pluginlib
+  - chomp_motion_planner
+moveit_ros_visualization:
+  build_depend:
+  - class_loader
+  - eigen
+  - libogre-dev
+  - libqt5-opengl-dev
+  - qtbase5-dev
+  - geometric_shapes
+  - interactive_markers
+  - moveit_ros_robot_interaction
+  - moveit_ros_perception
+  - moveit_ros_planning_interface
+  - moveit_ros_warehouse
+  - object_recognition_msgs
+  - pluginlib
+  - rosconsole
+  - roscpp
+  - rospy
+  - rviz
+  - tf2_eigen
+  run_depend:
+  - geometric_shapes
+  - interactive_markers
+  - moveit_ros_robot_interaction
+  - moveit_ros_perception
+  - moveit_ros_planning_interface
+  - moveit_ros_warehouse
+  - object_recognition_msgs
+  - pluginlib
+  - rosconsole
+  - roscpp
+  - rospy
+  - rviz
+  - tf2_eigen
+franka_moveit:
+  build_depend:
+  - panda_moveit_config
+  run_depend:
+  - panda_moveit_config
+franka_tools:
+  build_depend:
+  - roscpp
+  - rospy
+  - std_msgs
+  - franka_interface
+  - franka_core_msgs
+  - franka_control
+  run_depend:
+  - roscpp
+  - rospy
+  - std_msgs
+  - franka_interface
+  - franka_core_msgs
+  - franka_control
+moveit_servo:
+  build_depend:
+  - control_msgs
+  - control_toolbox
+  - geometry_msgs
+  - moveit_msgs
+  - moveit_ros_planning_interface
+  - rosparam_shortcuts
+  - sensor_msgs
+  - std_msgs
+  - std_srvs
+  - tf2_eigen
+  - trajectory_msgs
+  run_depend:
+  - joy_teleop
+  - spacenav_node
+  - control_msgs
+  - control_toolbox
+  - geometry_msgs
+  - moveit_msgs
+  - moveit_ros_planning_interface
+  - rosparam_shortcuts
+  - sensor_msgs
+  - std_msgs
+  - std_srvs
+  - tf2_eigen
+  - trajectory_msgs
+moveit_setup_assistant:
+  build_depend:
+  - libogre-dev
+  - qtbase5-dev
+  - libqt5-opengl-dev
+  - ompl
+  - rviz
+  - moveit_core
+  - moveit_ros_planning
+  - moveit_ros_visualization
+  - rosconsole
+  - roscpp
+  - urdf
+  - yaml-cpp
+  - srdfdom
+  run_depend:
+  - xacro
+  - rviz
+  - moveit_core
+  - moveit_ros_planning
+  - moveit_ros_visualization
+  - rosconsole
+  - roscpp
+  - urdf
+  - yaml-cpp
+  - srdfdom
+moveit_simple_controller_manager:
+  build_depend:
+  - moveit_core
+  - roscpp
+  - pluginlib
+  - control_msgs
+  - actionlib
+  run_depend:
+  - moveit_core
+  - roscpp
+  - pluginlib
+  - control_msgs
+  - actionlib
+moveit_ros_control_interface:
+  build_depend:
+  - actionlib
+  - controller_manager_msgs
+  - moveit_core
+  - moveit_simple_controller_manager
+  - pluginlib
+  - trajectory_msgs
+  run_depend:
+  - actionlib
+  - controller_manager_msgs
+  - moveit_core
+  - moveit_simple_controller_manager
+  - pluginlib
+  - trajectory_msgs
+moveit_visual_tools:
+  build_depend:
+  - rviz_visual_tools
+  - tf2_eigen
+  - geometry_msgs
+  - moveit_ros_planning
+  - moveit_core
+  - roscpp
+  - tf2_ros
+  - visualization_msgs
+  - graph_msgs
+  - std_msgs
+  - trajectory_msgs
+  - roslint
+  - cmake_modules
+  run_depend:
+  - rviz_visual_tools
+  - tf2_eigen
+  - geometry_msgs
+  - moveit_ros_planning
+  - moveit_core
+  - roscpp
+  - tf2_ros
+  - visualization_msgs
+  - graph_msgs
+  - std_msgs
+  - trajectory_msgs
+  - roslint
+  - cmake_modules
+moveit_tutorials:
+  build_depend:
+  - pluginlib
+  - eigen
+  - moveit_core
+  - moveit_ros_planning
+  - moveit_ros_planning_interface
+  - moveit_ros_perception
+  - interactive_markers
+  - geometric_shapes
+  - moveit_visual_tools
+  - rviz_visual_tools
+  - pcl_ros
+  - pcl_conversions
+  - rosbag
+  - tf2_ros
+  - tf2_eigen
+  - tf2_geometry_msgs
+  run_depend:
+  - panda_moveit_config
+  - franka_description
+  - pluginlib
+  - moveit_core
+  - moveit_commander
+  - moveit_fake_controller_manager
+  - moveit_ros_planning_interface
+  - moveit_ros_perception
+  - interactive_markers
+  - moveit_visual_tools
+  - rviz_visual_tools
+  - joint_state_publisher
+  - robot_state_publisher
+  - joy
+  - pcl_ros
+  - pcl_conversions
+  - rosbag
+  - rviz
+  - tf2_ros
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - xacro
+  - nodelet
+  - gazebo_ros
+pilz_industrial_motion_planner_testutils:
+  build_depend:
+  - moveit_core
+  - moveit_msgs
+  - tf2_eigen
+  run_depend:
+  - moveit_core
+  - moveit_msgs
+  - moveit_commander
+pilz_industrial_motion_planner:
+  build_depend:
+  - joint_limits_interface
+  - moveit_ros_planning_interface
+  - moveit_msgs
+  - moveit_core
+  - moveit_ros_planning
+  - moveit_ros_move_group
+  - liborocos-kdl-dev
+  - pluginlib
+  - roscpp
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_kdl
+  - tf2_ros
+  run_depend:
+  - joint_limits_interface
+  - moveit_ros_planning_interface
+  - moveit_msgs
+  - moveit_core
+  - moveit_ros_planning
+  - moveit_ros_move_group
+  - liborocos-kdl-dev
+  - pluginlib
+  - roscpp
+  - tf2
+  - tf2_eigen
+  - tf2_geometry_msgs
+  - tf2_kdl
+  - tf2_ros
