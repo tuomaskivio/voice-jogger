@@ -2,6 +2,7 @@ vosk==0.3.31
 webrtcvad==2.0.10
 word2number==1.1
 sounddevice==0.4.3
-rospy==1.14.12
-rospy_message_converter==0.5.2
+onnxruntime==1.12.1
+#rospy==1.14.12
+#rospy_message_converter==0.5.2
 
