@@ -12,7 +12,7 @@ from model_handler import Recognizer
 RATE = 16000
 CHUNK = 1280
 PORT = 50005
-ROS_ENABLED = False
+ROS_ENABLED = True
 
 if ROS_ENABLED:
     # ROS
