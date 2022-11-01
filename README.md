@@ -14,7 +14,7 @@ sudo apt install ros-noetic-desktop
 sudo apt install ros-noetic-moveit
 sudo apt install ros-noetic-libfranka ros-noetic-franka-ros
 sudo apt install ros-noetic-panda-moveit-config
-sudo apt install ros-noetic-gazebo-ros-control ros-noetic-rospy-message-converter ros-noetic-effort-controllers ros-noetic-joint-state-controller ros-noetic-moveit-commander ros-noetic-moveit-visual-tools
+sudo apt install ros-noetic-gazebo-ros-control ros-noetic-rospy-message-converter ros-noetic-effort-controllers ros-noetic-joint-state-controller ros-noetic-moveit ros-noetic-moveit-commander ros-noetic-moveit-visual-tools
 ```
 2. Python requirements
 ```bash
