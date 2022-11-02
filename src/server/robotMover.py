@@ -167,6 +167,10 @@ class RobotMover(object):
 			rospy.loginfo("Gripper rotated. Joint 7 value: " + value2decimals + ". Max: 2.90, Min: -2.90.")
 			print(joint_goal[6])
 			self.move_group.go(joint_goal, wait=True)
+
+	def robot_stop(self):
+		self.move_group.stop()
+		print("Stopped")
         
         
 	def handle_received_command(self, command):
@@ -189,9 +193,13 @@ class RobotMover(object):
 				pass
 			else:
 				self.saved_tasks[self.recording_task_name]["moves"].append(cmd)
-        
+		
+        #________________SAFETY COMMANDS___________________________
+		if cmd[0] == "STOP":
+			self.robot_stop()
+
         #________________MOVE COMMANDS___________________________
-		if cmd[0] == "HOME":
+		elif cmd[0] == "HOME":
 			self.move_robot_home()
 		
 		elif cmd[0] == "MOVE":

@@ -49,6 +49,7 @@ try:
             cmd = commandCreator.getCommand(True)
 
         if cmd is not None:
+            print(cmd)
             #start_robot means start sending commands
             if cmd[0] == 'START':
                 start_robot = True
