@@ -21,6 +21,7 @@ if ROS_ENABLED:
 
     rospy.init_node('text_command_transmitter')
     pub = rospy.Publisher("/text_commands", String, queue_size=10) # queue_size gives time for subscriber to process data it gets
+    pub_priority = rospy.Publisher("/text_commands_priority", String, queue_size=10) # queue_size gives time for subscriber to process data it gets
 
 # UDP Receiver (Handles Android App comm.)
 q = queue.Queue()
@@ -61,6 +62,9 @@ try:
                     pub.publish('STEP SIZE ' + commandCreator.step_size)
 
             elif cmd[0] == 'STOP':
+                print('Sending Command to ROS: ', cmdString)
+                if ROS_ENABLED:
+                    pub_priority.publish('STOP')
                 start_robot = False
                 print('Stopping with command: ', cmd)
 

@@ -7,6 +7,7 @@ if __name__== '__main__':
 	rospy.init_node('text_command_transmitter2')
 
 	pub = rospy.Publisher("/text_commands", String, queue_size=10) # queue_size gives time for subscriber to process data it gets
+	pub_priority = rospy.Publisher("/text_commands_priority", String, queue_size=10) # queue_size gives time for subscriber to process data it gets
 	
 	print(92*"_")
 	print("")
@@ -47,6 +48,9 @@ if __name__== '__main__':
 		inputCommand = input()
 		msg = String()
 		msg.data = inputCommand
-		pub.publish(msg)
+		if (inputCommand == "STOP"):
+			pub_priority.publish(msg)
+		else:
+			pub.publish(msg)
 
 	rospy.loginfo("Node was stopped")
