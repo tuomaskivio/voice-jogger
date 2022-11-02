@@ -66,7 +66,7 @@ try:
                     pub.publish('STEP SIZE ' + commandCreator.step_size)
 
             elif cmd[0] == 'STOP':
-                print('Sending Command to ROS: ', cmdString)
+                print('Sending Command to ROS: STOP')
                 if ROS_ENABLED:
                     pub_priority.publish('STOP')
                 start_robot = False
