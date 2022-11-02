@@ -68,7 +68,7 @@ class Recognizer:
 
             if 'stop' in text:
                 self.speech_start_idx = []
-                words = ['stop','stop']
+                words = ['stop','panda']
                 self.start_speech = False
 
             if time.time() - self.time_since_last_speech > self.speech_end_interval:

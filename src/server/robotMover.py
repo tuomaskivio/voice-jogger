@@ -5,7 +5,6 @@ import sys
 import copy
 import rospy
 import actionlib
-import franka_dataflow
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
@@ -56,6 +55,7 @@ class RobotMover(object):
         
 		# Subscriber for text commands
 		text_command_subscriber = rospy.Subscriber("/text_commands", String, self.handle_received_command)
+		text_command_subscriber = rospy.Subscriber("/text_commands_priority", String, self.handle_received_priority_command)
 
 		# Clients to send commands to the gripper
 		self.grasp_action_client = actionlib.SimpleActionClient("{}grasp".format('/franka_gripper/'), GraspAction)
@@ -168,6 +168,20 @@ class RobotMover(object):
 			rospy.loginfo("Gripper rotated. Joint 7 value: " + value2decimals + ". Max: 2.90, Min: -2.90.")
 			print(joint_goal[6])
 			self.move_group.go(joint_goal, wait=True)
+
+	def robot_stop(self):
+		self.move_group.stop()
+		rospy.loginfo("Stopped")
+
+	def handle_received_priority_command(self, command):
+		if type(command) == String:
+			cmd = command.data.split(' ')
+		elif type(command) == list:
+			cmd = command
+
+		#________________SAFETY COMMANDS___________________________
+		if cmd[0] == "STOP":
+			self.robot_stop()
         
         
 	def handle_received_command(self, command):
@@ -190,7 +204,7 @@ class RobotMover(object):
 				pass
 			else:
 				self.saved_tasks[self.recording_task_name]["moves"].append(cmd)
-        
+
         #________________MOVE COMMANDS___________________________
 		if cmd[0] == "HOME":
 			self.move_robot_home()
