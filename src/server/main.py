@@ -41,10 +41,15 @@ start_robot = False
 try:
 
     while True:
+        # We need this to make this process shutdown when rospy is being used
+        if ROS_ENABLED and rospy.is_shutdown():
+            break
+        if q.empty():
+            continue
         data = q.get()
         
         words = rec.speech_to_text(data)
-        if len(words) > 1:
+        if len(words) > 0:
             # mode: step mode. Faster response time, because in the direction and distance mode, distance needs to be recognized.
             commandCreator.original_words = words
             cmd = commandCreator.getCommand(True)
@@ -62,7 +67,7 @@ try:
                     pub.publish('STEP SIZE ' + commandCreator.step_size)
 
             elif cmd[0] == 'STOP':
-                print('Sending Command to ROS: ', cmdString)
+                print('Sending Command to ROS: STOP')
                 if ROS_ENABLED:
                     pub_priority.publish('STOP')
                 start_robot = False

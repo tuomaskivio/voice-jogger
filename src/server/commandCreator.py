@@ -100,16 +100,6 @@ class CommandCreator(object):
                 if self.unknown_word == word:
                     continue
                 filtered_words.append(word)
-                # if checked_word != None and checked_number != None:
-                    # filtered_words.append(word)
-                # word is number
-                # elif checked_word == None and checked_number != None:
-                    # filtered_words.append(word)
-                # word is known word
-                # elif checked_word != None and checked_number == None:
-                    # filtered_words.append(word)
-                # else:
-                    # continue
 
             if self.buffering_ok:
                 self.current_words = filtered_words
