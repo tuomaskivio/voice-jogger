@@ -27,6 +27,7 @@ class CommandCreator(object):
             'start' : 'START',
             'stop' : 'STOP',
             'panda': 'PANDA',
+            'robot': 'PANDA',
             'move' : 'MOVE',
             'go' : 'MOVE',
             'up' : 'UP',

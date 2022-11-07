@@ -49,7 +49,7 @@ try:
         data = q.get()
         
         words = rec.speech_to_text(data)
-        if len(words) > 0:
+        if words != None:
             # mode: step mode. Faster response time, because in the direction and distance mode, distance needs to be recognized.
             commandCreator.original_words = words
             cmd = commandCreator.getCommand(True)
@@ -82,7 +82,7 @@ try:
             cmd = None
 
 except Exception as e:
-    print(e)
+    print('Exception', e)
 finally:
     print('Shutting down...')
     print('Closing UDP thread')

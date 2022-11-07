@@ -25,13 +25,13 @@ class Recognizer:
         self.start_speech = False
         self.time_since_last_speech = 0.0
         self.speech_end_interval = 0.5
-        self.chunk_offset = 3
+        self.chunk_offset = 4
         self.rate = sample_rate
         
         model = vosk.Model(model_path)
         self.rec = vosk.KaldiRecognizer(model, self.rate, json.dumps([
         # System commands
-        "start", "stop", "panda", "move", "go", "mode", "distance", "direction", "step", "low", "medium", "high", "size", "tool", "open", "close", "grasp", "rotate",
+        "start", "stop", "panda", "robot", "move", "go", "mode", "distance", "direction", "step", "low", "medium", "high", "size", "tool", "open", "close", "grasp", "rotate",
         "list", "show", "task", "play", "do", "remove", "delete", "save", "home", "finish", "record", "gripper", "position", "spot", "other", "opposite", "counter",
         # Directions
         "up", "down", "left", "right", "forward", "backward", "front", "back",
@@ -48,33 +48,39 @@ class Recognizer:
         words = []
         # Detect Speech
         self.audio_chunks.append(data)
-        audio_int16 = np.frombuffer(data, np.int16);
+        audio_int16 = np.frombuffer(data, np.int16)
         audio_float32 = int2float(audio_int16)
         output = self.vad(audio_float32, self.rate)
         if output > 0.5:
-            #print("Speech Detected")
-            self.start_speech = True
-            self.speech_start_idx.append(len(self.audio_chunks) - 1)
-            self.time_since_last_speech = time.time()
-        if self.start_speech: 
-            start_idx = np.min(self.speech_start_idx) - self.chunk_offset
-            end_idx = np.max(self.speech_start_idx) + self.chunk_offset
-            #print(f"Speech Index Interval: [{start_idx}, {end_idx}]")
-            
-            speech = b''.join(self.audio_chunks[start_idx: end_idx])
-            # Convert speech to text
+            print("Speech Detected")
+            if not self.start_speech:
+                self.start_speech = True
+                # Add a few audio chunks before detecting speech
+                speech = b''.join(self.audio_chunks[-self.chunk_offset:])
+                #speech = data
+            else:
+                speech = data
             self.rec.AcceptWaveform(speech)
+            #text = json.loads(self.rec.FinalResult())["text"]
+            #print('Result: ', text)
+            #else:
+                #result = self.rec.Result()
+                #print('Partial result: ', json.loads(result)["text"])
+            
+            #text = json.loads(self.rec.FinalResult())["text"]
+            #print('Final result: ', text)
+
+            #if 'stop' in text:
+            #    words = ['stop','panda']
+            #    return words
+
+            self.time_since_last_speech = time.time()
+
+        if self.start_speech and time.time() - self.time_since_last_speech > self.speech_end_interval:
+            self.start_speech = False
             text = json.loads(self.rec.FinalResult())["text"]
-
-            if 'stop' in text:
-                self.speech_start_idx = []
-                words = ['stop','panda']
-                self.start_speech = False
-
-            if time.time() - self.time_since_last_speech > self.speech_end_interval:
-                self.speech_start_idx = []
-                words = text.split(' ')
-                #print("Speech Ended")
-                self.start_speech = False
-
-        return words
+            print('Final result: ', text)
+            words = text.split(' ')
+            print("Speech Ended")
+            return words
+        return None
