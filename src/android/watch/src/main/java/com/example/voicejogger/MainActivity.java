@@ -1,7 +1,6 @@
 package com.example.voicejogger;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,12 +16,15 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.FragmentActivity;
+import androidx.wear.ambient.AmbientModeSupport;
 
 import com.example.voicejogger.databinding.ActivityMainBinding;
 import com.google.android.gms.wearable.DataClient;
@@ -38,9 +40,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.function.IntBinaryOperator;
 
-public class MainActivity extends Activity implements DataClient.OnDataChangedListener {
+public class MainActivity extends FragmentActivity implements
+        DataClient.OnDataChangedListener,
+        AmbientModeSupport.AmbientCallbackProvider {
 
     private int port = 50005;
     private String ip_addr = "192.168.1.193";
@@ -56,7 +59,7 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
 
     ConnectivityManager connectivityManager;
     ConnectivityManager.NetworkCallback callback;
-
+    TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,9 +68,10 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        AmbientModeSupport.AmbientController ambientController = AmbientModeSupport.attach(this);
 
         ToggleButton toggleButton = binding.togglebuttonStartstop;
-        TextView textView = binding.textView;
+        textView = binding.textView;
 
         toggleButton.setOnCheckedChangeListener(toggleListener);
         textView.setOnClickListener(view -> {
@@ -164,6 +168,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
                 startStreaming();
             });
         }
+        textView.setVisibility(View.INVISIBLE);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     private void stopTransmission() {
@@ -176,6 +182,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
             recorder.release();
             Log.d("stopTransmission","Recorder released");
         }
+        textView.setVisibility(View.VISIBLE);
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     public void startStreaming() {
@@ -246,6 +254,31 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
                     editor.apply();
                 }
             }
+        }
+    }
+
+    @Override
+    public AmbientModeSupport.AmbientCallback getAmbientCallback() {
+        return new MyAmbientCallback();
+    }
+
+    private static class MyAmbientCallback extends AmbientModeSupport.AmbientCallback {
+        @Override
+        public void onEnterAmbient(Bundle ambientDetails) {
+            // Handle entering ambient mode
+            Log.d("ambientCallback", "Entered ambient mode");
+        }
+
+        @Override
+        public void onExitAmbient() {
+            // Handle exiting ambient mode
+            Log.d("ambientCallback", "Exited ambient mode");
+        }
+
+        @Override
+        public void onUpdateAmbient() {
+            // Update the content
+            Log.d("ambientCallback", "Updated ambient mode");
         }
     }
 }
