@@ -13,6 +13,7 @@ RATE = 16000
 CHUNK = 1280
 PORT = 50005
 ROS_ENABLED = True
+DEBUG = True
 
 if ROS_ENABLED:
     # ROS
@@ -28,7 +29,7 @@ q = queue.Queue()
 udp = UDPReceiver(q, CHUNK, "0.0.0.0", PORT)
 
 # Speech Recognizer (Handles speech to text)
-rec = Recognizer('model', RATE)
+rec = Recognizer('model', RATE, DEBUG)
 
 # Command Creator (Handles words to command logic)
 commandCreator = CommandCreator()
@@ -49,7 +50,7 @@ try:
         data = q.get()
         
         words = rec.speech_to_text(data)
-        if len(words) > 0:
+        if words != None:
             # mode: step mode. Faster response time, because in the direction and distance mode, distance needs to be recognized.
             commandCreator.original_words = words
             cmd = commandCreator.getCommand(True)
@@ -81,7 +82,7 @@ try:
             cmd = None
 
 except Exception as e:
-    print(e)
+    print('Exception', e)
 finally:
     print('Shutting down...')
     print('Closing UDP thread')

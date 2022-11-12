@@ -17,21 +17,21 @@ def int2float(sound):
 
 class Recognizer:
     """Handles vosk and vad speech to text"""
-    def __init__(self, model_path, sample_rate):
+    def __init__(self, model_path, sample_rate, debug_enabled = False):
         """Class Constructor"""
         self.vad = OnnxWrapper(str(Path(model_path, 'silero_vad.onnx')))
-        self.audio_chunks = []
-        self.speech_start_idx = []
+        self.audio_buffer = []
         self.start_speech = False
         self.time_since_last_speech = 0.0
         self.speech_end_interval = 0.5
-        self.chunk_offset = 3
+        self.chunk_offset = 4
         self.rate = sample_rate
+        self.debug_enabled = debug_enabled
         
         model = vosk.Model(model_path)
         self.rec = vosk.KaldiRecognizer(model, self.rate, json.dumps([
         # System commands
-        "start", "stop", "panda", "move", "go", "mode", "distance", "direction", "step", "low", "medium", "high", "size", "tool", "open", "close", "grasp", "rotate",
+        "start", "stop", "panda", "robot", "move", "go", "mode", "distance", "direction", "step", "low", "medium", "high", "size", "tool", "open", "close", "grasp", "rotate",
         "list", "show", "task", "play", "do", "remove", "delete", "save", "home", "finish", "record", "gripper", "position", "spot", "other", "opposite", "counter",
         # Directions
         "up", "down", "left", "right", "forward", "backward", "front", "back",
@@ -45,36 +45,44 @@ class Recognizer:
     
     def speech_to_text(self, data):
         """Convert speech to text using speech model recognizer"""
-        words = []
         # Detect Speech
-        self.audio_chunks.append(data)
-        audio_int16 = np.frombuffer(data, np.int16);
+        if not self.start_speech:
+            self.audio_buffer.append(data)
+        audio_int16 = np.frombuffer(data, np.int16)
         audio_float32 = int2float(audio_int16)
         output = self.vad(audio_float32, self.rate)
+
         if output > 0.5:
-            #print("Speech Detected")
-            self.start_speech = True
-            self.speech_start_idx.append(len(self.audio_chunks) - 1)
+            self.debug("Speech Detected")
             self.time_since_last_speech = time.time()
-        if self.start_speech: 
-            start_idx = np.min(self.speech_start_idx) - self.chunk_offset
-            end_idx = np.max(self.speech_start_idx) + self.chunk_offset
-            #print(f"Speech Index Interval: [{start_idx}, {end_idx}]")
-            
-            speech = b''.join(self.audio_chunks[start_idx: end_idx])
-            # Convert speech to text
-            self.rec.AcceptWaveform(speech)
-            text = json.loads(self.rec.FinalResult())["text"]
+            if not self.start_speech:
+                self.start_speech = True
+                # Add a few audio chunks before detecting speech
+                speech = b''.join(self.audio_buffer[-self.chunk_offset:-1])
+                self.rec.AcceptWaveform(speech)
+                self.audio_buffer = []
 
-            if 'stop' in text:
-                self.speech_start_idx = []
+        if self.start_speech:
+            self.rec.AcceptWaveform(data)
+            partial = json.loads(self.rec.PartialResult())['partial']
+            if partial != '':
+                self.debug(partial)
+
+            if 'stop' in partial:
+                self.rec.Reset()
                 words = ['stop','panda']
-                self.start_speech = False
+                return words
 
-            if time.time() - self.time_since_last_speech > self.speech_end_interval:
-                self.speech_start_idx = []
-                words = text.split(' ')
-                #print("Speech Ended")
-                self.start_speech = False
+        if self.start_speech and time.time() - self.time_since_last_speech > self.speech_end_interval:
+            self.start_speech = False
+            text = json.loads(self.rec.FinalResult())["text"]
+            self.debug('Final result: {text}')
+            words = text.split(' ')
+            self.debug("Speech Ended")
+            return words
+        return None
 
-        return words
+    def debug(self, text):
+        if self.debug_enabled:
+            print(text)
+
