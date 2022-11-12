@@ -13,6 +13,7 @@ RATE = 16000
 CHUNK = 1280
 PORT = 50005
 ROS_ENABLED = True
+DEBUG = True
 
 if ROS_ENABLED:
     # ROS
@@ -28,7 +29,7 @@ q = queue.Queue()
 udp = UDPReceiver(q, CHUNK, "0.0.0.0", PORT)
 
 # Speech Recognizer (Handles speech to text)
-rec = Recognizer('model', RATE)
+rec = Recognizer('model', RATE, DEBUG)
 
 # Command Creator (Handles words to command logic)
 commandCreator = CommandCreator()

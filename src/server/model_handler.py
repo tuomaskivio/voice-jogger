@@ -17,16 +17,16 @@ def int2float(sound):
 
 class Recognizer:
     """Handles vosk and vad speech to text"""
-    def __init__(self, model_path, sample_rate):
+    def __init__(self, model_path, sample_rate, debug_enabled = False):
         """Class Constructor"""
         self.vad = OnnxWrapper(str(Path(model_path, 'silero_vad.onnx')))
-        self.audio_chunks = []
-        self.speech_start_idx = []
+        self.audio_buffer = []
         self.start_speech = False
         self.time_since_last_speech = 0.0
         self.speech_end_interval = 0.5
         self.chunk_offset = 4
         self.rate = sample_rate
+        self.debug_enabled = debug_enabled
         
         model = vosk.Model(model_path)
         self.rec = vosk.KaldiRecognizer(model, self.rate, json.dumps([
@@ -47,40 +47,43 @@ class Recognizer:
         """Convert speech to text using speech model recognizer"""
         words = []
         # Detect Speech
-        self.audio_chunks.append(data)
+        if not self.start_speech:
+            self.audio_buffer.append(data)
         audio_int16 = np.frombuffer(data, np.int16)
         audio_float32 = int2float(audio_int16)
         output = self.vad(audio_float32, self.rate)
+
         if output > 0.5:
-            print("Speech Detected")
+            self.debug("Speech Detected")
+            self.time_since_last_speech = time.time()
             if not self.start_speech:
                 self.start_speech = True
                 # Add a few audio chunks before detecting speech
-                speech = b''.join(self.audio_chunks[-self.chunk_offset:])
-                #speech = data
-            else:
-                speech = data
-            self.rec.AcceptWaveform(speech)
-            #text = json.loads(self.rec.FinalResult())["text"]
-            #print('Result: ', text)
-            #else:
-                #result = self.rec.Result()
-                #print('Partial result: ', json.loads(result)["text"])
-            
-            #text = json.loads(self.rec.FinalResult())["text"]
-            #print('Final result: ', text)
+                speech = b''.join(self.audio_buffer[-self.chunk_offset:-1])
+                self.rec.AcceptWaveform(speech)
+                self.audio_buffer = []
 
-            #if 'stop' in text:
-            #    words = ['stop','panda']
-            #    return words
+        if self.start_speech:
+            self.rec.AcceptWaveform(data)
+            partial = json.loads(self.rec.PartialResult())['partial']
+            if partial != '':
+                self.debug(partial)
 
-            self.time_since_last_speech = time.time()
+            if 'stop' in partial:
+                self.rec.Reset()
+                words = ['stop','panda']
+                return words
 
         if self.start_speech and time.time() - self.time_since_last_speech > self.speech_end_interval:
             self.start_speech = False
             text = json.loads(self.rec.FinalResult())["text"]
-            print('Final result: ', text)
+            self.debug('Final result: {text}')
             words = text.split(' ')
-            print("Speech Ended")
+            self.debug("Speech Ended")
             return words
         return None
+
+    def debug(self, text):
+        if self.debug_enabled:
+            print(text)
+
