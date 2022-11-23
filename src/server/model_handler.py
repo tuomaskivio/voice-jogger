@@ -24,7 +24,7 @@ class Recognizer:
         self.start_speech = False
         self.time_since_last_speech = 0.0
         self.speech_end_interval = 0.5
-        self.chunk_offset = 4
+        self.chunk_offset = 8
         self.rate = sample_rate
         self.debug_enabled = debug_enabled
         

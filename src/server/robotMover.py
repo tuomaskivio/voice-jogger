@@ -63,6 +63,8 @@ class RobotMover(object):
         self.stop_action_client = actionlib.SimpleActionClient('/franka_gripper/stop', StopAction)
 
         # class variables
+        self.home = [0, -0.785, 0, -2.356, 0, 1.571, 0.785]
+        self.stopped = True
         self.robot = robot
         self.scene = scene
         self.move_group = move_group
@@ -90,7 +92,7 @@ class RobotMover(object):
 
 
     def move_robot_home(self):
-        self.move_group.go([0, -0.785, 0, -2.356, 0, 1.571, 0.785], wait=True)
+        self.move_group.go(self.home, wait=True)
         self.move_group.stop()
     
         
@@ -131,24 +133,33 @@ class RobotMover(object):
         self.move_group.execute(plan, wait=True)
         
     def open_gripper(self):
+        if self.recording_task_name is not None:
+            self.saved_tasks[self.recording_task_name]["moves"].append(['gripper', 'open'])
         movegoal = MoveGoal()
         movegoal.width = 0.08
         movegoal.speed = 0.05
         self.move_action_client.send_goal(movegoal)
+        self.move_action_client.wait_for_result()
 
     def set_gripper_distance(self, distance):
+        if self.recording_task_name is not None:
+            self.saved_tasks[self.recording_task_name]["moves"].append(['gripper', 'distance', distance])
         movegoal = MoveGoal()
         movegoal.width = distance
         movegoal.speed = 0.05
         self.move_action_client.send_goal(movegoal)
+        self.move_action_client.wait_for_result()
 
     def close_gripper(self):
+        if self.recording_task_name is not None:
+            self.saved_tasks[self.recording_task_name]["moves"].append(['gripper', 'close'])
         graspgoal = GraspGoal()
         graspgoal.width = 0.00
         graspgoal.speed = 0.05
         graspgoal.force = 2  # limits 0.01 - 50 N
         graspgoal.epsilon = GraspEpsilon(inner=0.08, outer=0.08)
         self.grasp_action_client.send_goal(graspgoal)
+        self.grasp_action_client.wait_for_result()
 
     def rotate_gripper(self, stepSize, clockwise = True):
         # step size are: 0.01, 0.05, 0.1
@@ -174,7 +185,12 @@ class RobotMover(object):
         self.move_group.stop()
         goal = StopGoal()
         self.stop_action_client.send_goal(goal)
+        self.stopped = True
         rospy.loginfo("Stopped")
+
+    def robot_start(self):
+        self.stopped = False
+        rospy.loginfo("Started")
 
     def handle_received_priority_command(self, command):
         if type(command) == String:
@@ -205,8 +221,10 @@ class RobotMover(object):
                 self.recording_task_name = None
             elif cmd[0] == "RECORD":
                 pass
-            else:
-                self.saved_tasks[self.recording_task_name]["moves"].append(cmd)
+
+        #________________START COMMAND___________________________
+        if cmd[0] == "START":
+            self.robot_start()
 
         #________________MOVE COMMANDS___________________________
         if cmd[0] == "HOME":
@@ -371,9 +389,6 @@ class RobotMover(object):
                 self.recording_task_name = cmd[1]
                 if self.recording_task_name not in self.saved_tasks.keys():
                     self.saved_tasks[self.recording_task_name] = {}
-                    self.saved_tasks[self.recording_task_name]["start_step_size"] = self.step_size
-                    start_pose = copy.deepcopy(self.move_group.get_current_pose().pose)
-                    self.saved_tasks[self.recording_task_name]["start_pose"] = start_pose
                     self.saved_tasks[self.recording_task_name]["moves"] = []
             else:
                 print("RECORD error: give task name.")
@@ -381,15 +396,27 @@ class RobotMover(object):
         elif cmd[0] == 'TASK' or cmd[0] == 'DO' or cmd[0] == 'PLAY':
             if len(cmd) > 1:
                 if cmd[1] in self.saved_tasks.keys():
-                    step_size_before_task = self.step_size
-                    self.step_size = self.saved_tasks[cmd[1]]["start_step_size"]
-                    start_pose = self.saved_tasks[cmd[1]]["start_pose"]
-                    (plan, fraction) = self.move_group.compute_cartesian_path([start_pose], 0.01, 0.0)
-                    self.move_group.execute(plan, wait=True)
+
+                    waypoints = []
                     for step in self.saved_tasks[cmd[1]]["moves"]:
-                        print("calling handle received command with params", step)
-                        self.handle_received_command(step)
-                    self.step_size = step_size_before_task
+                        if self.stopped:
+                            break
+                        if step[0] == 'pose':
+                            waypoints.append(copy.deepcopy(step[1]))
+                        elif len(waypoints) > 0:
+                            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+                            self.move_group.execute(plan, wait=True)
+                            waypoints = []
+                        if step[0] == 'gripper':
+                            if step[1] == 'open':
+                                self.open_gripper()
+                            elif step[1] == 'distance':
+                                self.set_gripper_distance(step[2])
+                            elif step[1] == 'close':
+                                self.close_gripper()
+                    if len(waypoints) > 0:
+                        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+                        self.move_group.execute(plan, wait=True)
                 else:
                     print("Executing task failed: Task name " + cmd[1] + " not in recorded tasks.")
             else:
@@ -437,7 +464,11 @@ class RobotMover(object):
                 
         else:
             print("Command not found.")
-            
+
+        #___________________RECORD WAYPOINT______________________
+        if self.recording_task_name is not None:
+            pose = copy.deepcopy(self.move_group.get_current_pose().pose)
+            self.saved_tasks[self.recording_task_name]["moves"].append(['pose', pose])
 
 def get_number(words):
     number_words = copy.copy(words)
