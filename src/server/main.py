@@ -106,6 +106,17 @@ class Server:
 
         if cmd is not None:
 
+            #start_robot means start sending commands
+            if cmd[0] == 'START':
+                start_robot = True
+                print('Starting with command: ', cmd)
+                print(f'Sending configuration to ROS. mode: {commandCreator.mode} step_size: {commandCreator.step_size}')
+                if ROS_ENABLED:
+                    # Send robot configuration to ROS.
+                    pub.publish('START')
+                    pub.publish('MODE ' + commandCreator.mode)
+                    pub.publish('STEP SIZE ' + commandCreator.step_size)
+
             if cmd[0] == 'STOP':
                 print('Sending Command to ROS: STOP')
                 if ROS_ENABLED:
@@ -119,7 +130,7 @@ class Server:
                 print('Sending Command to ROS: ', cmdString)
                 if ROS_ENABLED:
                     self.pub.publish(cmdString)
-                self.__check_chained__(words)
+            self.__check_chained__(words)
 
 
 
