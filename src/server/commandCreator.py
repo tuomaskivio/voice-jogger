@@ -4,6 +4,7 @@
 import copy
 from word2number import w2n
 
+
 class CommandCreator(object):
     def __init__(self):
 
@@ -62,12 +63,13 @@ class CommandCreator(object):
             'finish' : 'FINISH',
             'record' : 'RECORD',
             'gripper' : 'GRIPPER',
-            'grasp' : 'GRASP',
             'position' : 'POSITION',
             'spot' : 'SPOT',
             'other' : 'OTHER',
             'opposite' : 'OPPOSITE', 
-            'counter' : 'COUNTER'
+            'counter' : 'COUNTER',
+            'and' : 'AND',
+            'then' : 'THEN'
         }
 
 
@@ -126,7 +128,7 @@ class CommandCreator(object):
 
         # Take a new word from the words-list until word is found from all_words_lookup_table
         if len(words) > 0:
-            command =  self.all_words_lookup_table.get(words.pop(0))
+            command = self.all_words_lookup_table.get(words.pop(0))
         else:
             return None
 
@@ -420,3 +422,10 @@ class CommandCreator(object):
         except Exception as e:
             print('Invalid tool command. ', e)
             return None
+
+    def check_if_chained(self, words):
+        for i in range(len(words)):
+            if self.all_words_lookup_table.get(words[i]) == "AND" or self.all_words_lookup_table.get(words[i]) == "THEN":
+                if len(words) > i + 1:
+                    return words[i+1:]
+        return None
