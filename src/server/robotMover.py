@@ -128,6 +128,7 @@ class RobotMover(object):
             
         waypoints.append(copy.deepcopy(robot_pose))
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+        plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = 0.1)
         self.move_group.execute(plan, wait=True)
         
     def open_gripper(self):
