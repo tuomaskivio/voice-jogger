@@ -10,6 +10,8 @@ import moveit_msgs.msg
 import geometry_msgs.msg
 
 from std_msgs.msg import String
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryActionGoal
 from word2number import w2n
 from franka_gripper.msg import ( GraspAction, GraspGoal,
                                  HomingAction, HomingGoal,
@@ -61,6 +63,12 @@ class RobotMover(object):
         self.grasp_action_client = actionlib.SimpleActionClient('/franka_gripper/grasp', GraspAction)
         self.move_action_client = actionlib.SimpleActionClient('/franka_gripper/move', MoveAction)
         self.stop_action_client = actionlib.SimpleActionClient('/franka_gripper/stop', StopAction)
+
+        # Publish to joint trajectory controller
+        self.joint_trajectory_goal_pub = rospy.Publisher(
+                                      '/effort_joint_trajectory_controller/follow_joint_trajectory/goal',
+                                      FollowJointTrajectoryActionGoal, 
+                                      queue_size = 10)
 
         # class variables
         self.robot = robot
@@ -172,7 +180,27 @@ class RobotMover(object):
             self.move_group.go(joint_goal, wait=True)
 
     def robot_stop(self):
-        self.move_group.stop()
+        # Replace current trajectory with stopping trajectory
+        joint_values = self.move_group.get_current_joint_values()
+        print(joint_values)
+        stop_trajectory = JointTrajectory()
+        stop_trajectory.joint_names = ['panda_joint1',
+                                       'panda_joint2',
+                                       'panda_joint3',
+                                       'panda_joint4',
+                                       'panda_joint5',
+                                       'panda_joint6',
+                                       'panda_joint7']
+        stop_trajectory.points.append(JointTrajectoryPoint())
+        stop_trajectory.points[0].positions = joint_values
+        stop_trajectory.points[0].velocities = [0.0 for i in joint_values]
+        stop_trajectory.points[0].time_from_start = rospy.Duration(0.5) # Stopping time
+        stop_trajectory.header.frame_id = 'world'
+        stop_goal = FollowJointTrajectoryActionGoal()
+        stop_goal.goal.trajectory = stop_trajectory
+        self.joint_trajectory_goal_pub.publish(stop_goal)
+
+        # Stop gripper
         goal = StopGoal()
         self.stop_action_client.send_goal(goal)
         rospy.loginfo("Stopped")
