@@ -21,6 +21,17 @@ from franka_gripper.msg import ( GraspAction, GraspGoal,
 
 import textFileHandler as tfh
 
+from enum import Enum
+class Velocity(Enum):
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+velocities = {
+    Velocity.LOW: 0.1,
+    Velocity.MEDIUM: 0.3,
+    Velocity.HIGH: 1.0
+}
+
 class RobotMover(object):
     def __init__(self):
         super(RobotMover, self).__init__()
@@ -81,6 +92,7 @@ class RobotMover(object):
         self.recording_task_name = None
         self.saved_positions = tfh.load_position()
         self.saved_tasks = tfh.load_task()
+        self.velocity = Velocity.MEDIUM
         
         
     def move_gripper_home(self):
@@ -93,11 +105,13 @@ class RobotMover(object):
         pose.orientation.z = 0
         pose.orientation.w = 0
         
+        self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
         (plan, fraction) = self.move_group.compute_cartesian_path([pose], 0.01, 0.0)  # jump_threshold
         self.move_group.execute(plan, wait=True)
 
 
     def move_robot_home(self):
+        self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
         self.move_group.go([0, -0.785, 0, -2.356, 0, 1.571, 0.785], wait=True)
         self.move_group.stop()
     
@@ -110,6 +124,7 @@ class RobotMover(object):
             waypoints = []
             waypoints.append(copy.deepcopy(target))
             (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+            plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = velocities[self.velocity])
             self.move_group.execute(plan, wait=True)
         else:
             rospy.loginfo("Position " + position + " not saved.")
@@ -136,7 +151,7 @@ class RobotMover(object):
             
         waypoints.append(copy.deepcopy(robot_pose))
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
-        plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = 0.1)
+        plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = velocities[self.velocity])
         self.move_group.execute(plan, wait=True)
         
     def open_gripper(self):
@@ -177,6 +192,7 @@ class RobotMover(object):
             value2decimals = "{:.2f}".format(joint_goal[6])
             rospy.loginfo("Gripper rotated. Joint 7 value: " + value2decimals + ". Max: 2.90, Min: -2.90.")
             print(joint_goal[6])
+            self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
             self.move_group.go(joint_goal, wait=True)
 
     def robot_stop(self):
@@ -194,7 +210,7 @@ class RobotMover(object):
         stop_trajectory.points.append(JointTrajectoryPoint())
         stop_trajectory.points[0].positions = joint_values
         stop_trajectory.points[0].velocities = [0.0 for i in joint_values]
-        stop_trajectory.points[0].time_from_start = rospy.Duration(0.5) # Stopping time
+        stop_trajectory.points[0].time_from_start = rospy.Duration(0.5 * velocities[self.velocity]) # Stopping time
         stop_trajectory.header.frame_id = 'world'
         stop_goal = FollowJointTrajectoryActionGoal()
         stop_goal.goal.trajectory = stop_trajectory
@@ -373,6 +389,21 @@ class RobotMover(object):
                 rospy.loginfo("Command not found.")
 
 
+        #________________CHANGE VELOCITY________________________
+        elif cmd[0] == 'VELOCITY':
+            if cmd[1] == 'LOW':
+                self.velocity = Velocity.LOW
+                rospy.loginfo("Velocity LOW")
+            elif cmd[1] == 'MEDIUM':
+                self.velocity = Velocity.MEDIUM
+                rospy.loginfo("Velocity MEDIUM")
+            elif cmd[1] == 'HIGH':
+                self.velocity = Velocity.HIGH
+                rospy.loginfo("Velocity HIGH")
+            else:
+                rospy.loginfo("Command not found.")
+
+
         #________________SAVE ROBOT POSITION_____________________
         elif cmd[0] == 'SAVE' and cmd[1] == 'POSITION':
             if cmd[2] in self.saved_positions.keys():
@@ -414,6 +445,7 @@ class RobotMover(object):
                     self.step_size = self.saved_tasks[cmd[1]]["start_step_size"]
                     start_pose = self.saved_tasks[cmd[1]]["start_pose"]
                     (plan, fraction) = self.move_group.compute_cartesian_path([start_pose], 0.01, 0.0)
+                    plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = velocities[self.velocity])
                     self.move_group.execute(plan, wait=True)
                     for step in self.saved_tasks[cmd[1]]["moves"]:
                         print("calling handle received command with params", step)
