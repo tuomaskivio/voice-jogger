@@ -67,7 +67,10 @@ class CommandCreator(object):
             'spot' : 'SPOT',
             'other' : 'OTHER',
             'opposite' : 'OPPOSITE', 
-            'counter' : 'COUNTER'
+            'counter' : 'COUNTER',
+            'velocity' : 'VELOCITY',
+            'speed' : 'VELOCITY',
+            'recover' : 'RECOVER'
         }
 
 
@@ -140,6 +143,8 @@ class CommandCreator(object):
             return self.get_start_command(words)
         elif command == "STOP":
             return self.get_stop_command(words)
+        elif command == "RECOVER":
+            return ["RECOVER"]
         elif command == "HOME":
             return ["HOME"]
         elif command == "MOVE":
@@ -149,6 +154,8 @@ class CommandCreator(object):
                 return self.get_move_command_direction_and_distance_mode(words)
         elif command == "MODE":
             return self.change_mode(words)
+        elif command == "VELOCITY":
+            return self.change_velocity(words)
         elif command == "STEP":
             return self.change_step_size(words)
         elif command == "TOOL":
@@ -381,6 +388,20 @@ class CommandCreator(object):
         except Exception as e:
             print('Invalid mode change.')
             print(e)
+            return None
+
+    def change_velocity(self, words):
+        try:
+            if len(words) < 1:
+                return None
+            velocity = self.all_words_lookup_table.get(words.pop(0), '')
+            print("velocity: ", velocity)
+            if velocity not in ['LOW', 'MEDIUM', 'HIGH']:
+                raise ValueError(velocity)
+            return ['VELOCITY', velocity]
+
+        except Exception as e:
+            print('Invalid velocity change. ', e)
             return None
 
 
