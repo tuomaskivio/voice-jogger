@@ -27,8 +27,8 @@ class Velocity(Enum):
     MEDIUM = 2
     HIGH = 3
 velocities = {
-    Velocity.LOW: 0.1,
-    Velocity.MEDIUM: 0.3,
+    Velocity.LOW: 0.05,
+    Velocity.MEDIUM: 0.2,
     Velocity.HIGH: 1.0
 }
 
@@ -77,7 +77,7 @@ class RobotMover(object):
 
         # Publish to joint trajectory controller
         self.joint_trajectory_goal_pub = rospy.Publisher(
-                                      '/effort_joint_trajectory_controller/follow_joint_trajectory/goal',
+                                      '/position_joint_trajectory_controller/follow_joint_trajectory/goal',
                                       FollowJointTrajectoryActionGoal, 
                                       queue_size = 10)
 
@@ -210,7 +210,7 @@ class RobotMover(object):
         stop_trajectory.points.append(JointTrajectoryPoint())
         stop_trajectory.points[0].positions = joint_values
         stop_trajectory.points[0].velocities = [0.0 for i in joint_values]
-        stop_trajectory.points[0].time_from_start = rospy.Duration(0.5 * velocities[self.velocity]) # Stopping time
+        stop_trajectory.points[0].time_from_start = rospy.Duration(1) # Stopping time
         stop_trajectory.header.frame_id = 'world'
         stop_goal = FollowJointTrajectoryActionGoal()
         stop_goal.goal.trajectory = stop_trajectory
