@@ -6,11 +6,13 @@ from rospy_message_converter import message_converter
 def write_task(data):
 	for taskname in data:
 		for dataName in data[taskname]:
-			# Originally type of start_pose is ros message: geometry_msgs/Pose
-			# Convert it to python dict.
-			if dataName == "start_pose":
-				startPoseDict = message_converter.convert_ros_message_to_dictionary(data[taskname]["start_pose"])
-				data[taskname]["start_pose"] = startPoseDict
+			if dataName == 'moves':
+				for move in data[taskname][dataName]:
+					# Originally type of pose is ros message: geometry_msgs/Pose
+					# Convert it to python dict.
+					if move[0] == "pose":
+						poseDict = message_converter.convert_ros_message_to_dictionary(move[1])
+						move[1] = poseDict
 
 	# Convert data-dict to JSON
 	dataJSON = json.dumps(data, indent=4)
@@ -30,10 +32,12 @@ def load_task():
 
 	for taskname in data:
 		for dataName in data[taskname]:
-			# Convert Python dict back to ros message
-			if dataName == "start_pose":
-				startPoseRosMessage = message_converter.convert_dictionary_to_ros_message('geometry_msgs/Pose', data[taskname]["start_pose"])
-				data[taskname]["start_pose"] = startPoseRosMessage
+			if dataName == 'moves':
+				for move in data[taskname][dataName]:
+					# Convert Python dict back to ros message
+					if move[0] == "pose":
+						poseRosMessage = message_converter.convert_dictionary_to_ros_message('geometry_msgs/Pose', move[1])
+						move[1] = poseRosMessage
 	return data
 
 
