@@ -64,6 +64,7 @@ try:
                 print(f'Sending configuration to ROS. mode: {commandCreator.mode} step_size: {commandCreator.step_size}')
                 if ROS_ENABLED:
                     # Send robot configuration to ROS.
+                    pub.publish('START')
                     pub.publish('MODE ' + commandCreator.mode)
                     pub.publish('STEP SIZE ' + commandCreator.step_size)
 

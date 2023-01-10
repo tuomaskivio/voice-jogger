@@ -12,6 +12,7 @@ import geometry_msgs.msg
 from std_msgs.msg import String
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryActionGoal
+from franka_msgs.msg import ErrorRecoveryActionGoal
 from word2number import w2n
 from franka_gripper.msg import ( GraspAction, GraspGoal,
                                  HomingAction, HomingGoal,
@@ -80,6 +81,13 @@ class RobotMover(object):
                                       '/position_joint_trajectory_controller/follow_joint_trajectory/goal',
                                       FollowJointTrajectoryActionGoal, 
                                       queue_size = 10)
+
+        # Publish to error recovery topic
+        self.error_recovery_pub = rospy.Publisher(
+                                        '/franka_control/error_recovery/goal',
+                                        ErrorRecoveryActionGoal,
+                                        queue_size = 10)
+
 
         # class variables
         self.robot = robot
@@ -221,6 +229,16 @@ class RobotMover(object):
         self.stop_action_client.send_goal(goal)
         rospy.loginfo("Stopped")
 
+    def error_recovery(self):
+        error_recovery_goal = ErrorRecoveryActionGoal()
+        self.error_recovery_pub.publish(error_recovery_goal)
+        rospy.loginfo("Recovered from errors")
+
+    def robot_start(self):
+        self.error_recovery()
+        rospy.loginfo("Started")
+
+
     def handle_received_priority_command(self, command):
         if type(command) == String:
             cmd = command.data.split(' ')
@@ -253,8 +271,14 @@ class RobotMover(object):
             else:
                 self.saved_tasks[self.recording_task_name]["moves"].append(cmd)
 
+        #________________STATUS COMMANDS_________________________
+        if cmd[0] == 'START':
+            self.robot_start()
+        elif cmd[0] == 'RECOVER':
+            self.error_recovery()
+
         #________________MOVE COMMANDS___________________________
-        if cmd[0] == "HOME":
+        elif cmd[0] == "HOME":
             self.move_robot_home()
         
         elif cmd[0] == "MOVE":

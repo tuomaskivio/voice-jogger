@@ -70,7 +70,8 @@ class CommandCreator(object):
             'opposite' : 'OPPOSITE', 
             'counter' : 'COUNTER',
             'velocity' : 'VELOCITY',
-            'speed' : 'VELOCITY'
+            'speed' : 'VELOCITY',
+            'recover' : 'RECOVER'
         }
 
 
@@ -143,6 +144,8 @@ class CommandCreator(object):
             return self.get_start_command(words)
         elif command == "STOP":
             return self.get_stop_command(words)
+        elif command == "RECOVER":
+            return ["RECOVER"]
         elif command == "HOME":
             return ["HOME"]
         elif command == "MOVE":
