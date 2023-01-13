@@ -32,7 +32,7 @@ udp = UDPReceiver(q, CHUNK, "0.0.0.0", PORT)
 rec = Recognizer('model', RATE, DEBUG)
 
 # Command Creator (Handles words to command logic)
-commandCreator = CommandCreator()
+commandCreator = CommandCreator(debug_enabled=DEBUG)
 
 # Start udp thread
 udp.start()

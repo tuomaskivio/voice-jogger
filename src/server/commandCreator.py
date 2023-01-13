@@ -5,7 +5,8 @@ import copy
 from word2number import w2n
 
 class CommandCreator(object):
-    def __init__(self):
+    def __init__(self, debug_enabled = False):
+        self.debug_enabled = debug_enabled
 
         # modes: STEP, DIRECTION AND DISTANCE
         self.mode = 'STEP'
@@ -113,13 +114,18 @@ class CommandCreator(object):
                 self.current_words = []
 
             if self.original_words[0] != "":
-                print(80*"-")
-                print("All recorded words: ")
-                print(self.original_words)
-                print("")
-                print("Filtered_words: ")
-                print(filtered_words)
-                print("")
+                if self.debug_enabled:
+                    print(80*"-")
+                    print("All recorded words: ")
+                    print(self.original_words)
+                    print("")
+                    print("Filtered_words: ")
+                    print(filtered_words)
+                    print("")
+                else:
+                    print(80*"-")
+                    print('Detected words:')
+                    print(' '.join(filtered_words))
 
         words = []
         if first_call:
