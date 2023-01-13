@@ -88,9 +88,14 @@ class RobotMover(object):
                                         ErrorRecoveryActionGoal,
                                         queue_size = 10)
 
+        # class constants
+        self.pickup_area_offset = 0.1
+        self.pickup_approach_height = 0.15
+        self.default_pickup_height = 0.02
+        self.object_size = 0.05
+        self.home = [0, -0.785, 0, -2.356, 0, 1.571, 0.785]
 
         # class variables
-        self.home = [0, -0.785, 0, -2.356, 0, 1.571, 0.785]
         self.stopped = True
         self.robot = robot
         self.scene = scene
@@ -103,6 +108,7 @@ class RobotMover(object):
         self.saved_positions = tfh.load_position()
         self.saved_tasks = tfh.load_task()
         self.velocity = Velocity.MEDIUM
+        self.waiting_for_tool_name = False
         
         
     def move_gripper_home(self):
@@ -114,17 +120,21 @@ class RobotMover(object):
         pose.orientation.y = -0.38249949
         pose.orientation.z = 0
         pose.orientation.w = 0
-        
-        self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
-        (plan, fraction) = self.move_group.compute_cartesian_path([pose], 0.01, 0.0)  # jump_threshold
-        self.move_group.execute(plan, wait=True)
+
+        self.move_robot([pose])
 
 
     def move_robot_home(self):
         self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
         self.move_group.go(self.home, wait=True)
         self.move_group.stop()
-    
+
+    def move_robot(self, waypoints):
+        if self.stopped:
+            return
+        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+        plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = velocities[self.velocity])
+        self.move_group.execute(plan, wait=True)
         
     def move_robot_to_position(self, position):
         # If there isn't saved position, dont't do nothing but inform user
@@ -133,9 +143,7 @@ class RobotMover(object):
             rospy.loginfo("Robot moved to position " + position)
             waypoints = []
             waypoints.append(copy.deepcopy(target))
-            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
-            plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = velocities[self.velocity])
-            self.move_group.execute(plan, wait=True)
+            self.move_robot(waypoints)
         else:
             rospy.loginfo("Position " + position + " not saved.")
             
@@ -160,20 +168,23 @@ class RobotMover(object):
             robot_pose.position.x -= stepSize
             
         waypoints.append(copy.deepcopy(robot_pose))
-        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
-        plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = velocities[self.velocity])
-        self.move_group.execute(plan, wait=True)
+        self.move_robot(waypoints)
         
-    def open_gripper(self):
+    def open_gripper(self, wait=True):
+        if self.stopped:
+            return
         if self.recording_task_name is not None:
             self.saved_tasks[self.recording_task_name]["moves"].append(['gripper', 'open'])
         movegoal = MoveGoal()
         movegoal.width = 0.08
         movegoal.speed = 0.05
         self.move_action_client.send_goal(movegoal)
-        self.move_action_client.wait_for_result()
+        if wait:
+            self.move_action_client.wait_for_result()
 
     def set_gripper_distance(self, distance):
+        if self.stopped:
+            return
         if self.recording_task_name is not None:
             self.saved_tasks[self.recording_task_name]["moves"].append(['gripper', 'distance', distance])
         movegoal = MoveGoal()
@@ -183,6 +194,8 @@ class RobotMover(object):
         self.move_action_client.wait_for_result()
 
     def close_gripper(self):
+        if self.stopped:
+            return
         if self.recording_task_name is not None:
             self.saved_tasks[self.recording_task_name]["moves"].append(['gripper', 'close'])
         graspgoal = GraspGoal()
@@ -194,6 +207,8 @@ class RobotMover(object):
         self.grasp_action_client.wait_for_result()
 
     def rotate_gripper(self, stepSize, clockwise = True):
+        if self.stopped:
+            return
         # step size are: 0.01, 0.05, 0.1
         # Increase rotating step size
         stepSize = stepSize * 10
@@ -213,6 +228,137 @@ class RobotMover(object):
             print(joint_goal[6])
             self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
             self.move_group.go(joint_goal, wait=True)
+
+    def give_tool(self, name):
+        if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
+            rospy.loginfo("Corners not saved")
+            return
+
+        # If there isn't saved position, dont't do nothing but inform user
+        if name not in self.saved_positions.keys():
+            rospy.loginfo("Position " + name + " not saved.")
+            return
+
+        target = copy.deepcopy(self.saved_positions[name])
+        approach_target = copy.deepcopy(target)
+        approach_target.position.z += self.pickup_approach_height
+        # Pick up tool
+        waypoints = []
+        waypoints.append(approach_target)
+        waypoints.append(target)
+        self.open_gripper()
+        self.move_robot(waypoints)
+        self.close_gripper()
+        # Drop tool
+        target2 = copy.deepcopy(self.saved_positions["CORNER2"])
+        target2.position.x -= self.pickup_area_offset
+        target2.position.y -= self.pickup_area_offset
+        approach_target2 = copy.deepcopy(target2)
+        approach_target2.position.z += self.pickup_approach_height
+        target2.position.z = self.saved_positions[name].position.z
+        waypoints = []
+        waypoints.append(approach_target)
+        waypoints.append(approach_target2)
+        waypoints.append(target2)
+        self.move_robot(waypoints)
+        self.open_gripper()
+        # Move up
+        self.move_robot([approach_target2])
+
+
+    def pickup_tool(self, name=""):
+        if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
+            rospy.loginfo("Corners not saved")
+            return
+
+        target = copy.deepcopy(self.saved_positions["CORNER2"])
+        target.position.x -= self.pickup_area_offset
+        target.position.y -= self.pickup_area_offset
+        approach_target = copy.deepcopy(target)
+        approach_target.position.z += self.pickup_approach_height
+
+        if name == "":
+            target.position.z += self.default_pickup_height
+        else:
+            target.position.z = self.saved_positions[name].position.z
+
+        # Go to pickup point
+        waypoints = []
+        waypoints.append(approach_target)
+        waypoints.append(target)
+        self.open_gripper()
+        self.move_robot(waypoints)
+        # Pick tool
+        self.close_gripper()
+        # Move up
+        waypoints = []
+        waypoints.append(approach_target)
+        if name == "":
+            self.move_robot(waypoints)
+            self.waiting_for_tool_name = True
+        else:
+            target2 = copy.deepcopy(self.saved_positions[name])
+            approach_target2 = copy.deepcopy(target2)
+            approach_target2.position.z = approach_target.position.z
+            waypoints.append(approach_target2)
+            waypoints.append(target2)
+            self.move_robot(waypoints)
+            self.open_gripper()
+            self.move_robot([approach_target2])
+
+        
+    def save_tool(self, name):
+        if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
+            rospy.loginfo("Corners not saved")
+            return
+
+        orig_target = copy.deepcopy(self.saved_positions["CORNER1"])
+        orig_target.position.x += self.object_size
+        orig_target.position.y += self.object_size
+        target = copy.deepcopy(orig_target)
+        while not self.is_free(target.position):
+            target.position.x += self.object_size * 2
+            if target.position.x + self.object_size > self.saved_positions["CORNER2"].position.x:
+                target.position.x = orig_target.position.x
+                target.position.y += self.object_size * 2
+                if target.position.y + self.object_size > self.saved_positions["CORNER2"].position.y:
+                    rospy.loginfo("Table is full")
+                    self.open_gripper()
+                    return
+        target.position.z = self.saved_positions["CORNER1"].position.z + self.default_pickup_height
+        # Save tool position
+        if name in self.saved_positions.keys():
+            rospy.loginfo("There was already a stored position with the name %s so it was overwritten", name)
+        self.saved_positions[name] = copy.deepcopy(target)
+        tfh.write_position(self.saved_positions)
+        self.saved_positions = tfh.load_position()
+        print("Position " + name + " saved.")
+        self.waiting_for_tool_name = False
+
+        waypoints = []
+        approach_target = copy.deepcopy(target)
+        approach_target.position.z = self.saved_positions["CORNER1"].position.z + self.pickup_approach_height
+        waypoints.append(approach_target)
+        waypoints.append(target)
+        self.move_robot(waypoints)
+        self.open_gripper()
+        self.move_robot([approach_target])
+
+
+    def is_free(self, target):
+        for position in self.saved_positions.keys():
+            if position == "CORNER1":
+                continue
+            position = self.saved_positions[position].position
+            # Don't check for saved positions above the table
+            if position.z > self.saved_positions["CORNER1"].position.z + self.object_size:
+                continue
+            if position.x > target.x - self.object_size and \
+               position.x < target.x + self.object_size and \
+               position.y > target.y - self.object_size and \
+               position.y < target.y + self.object_size:
+                return False
+        return True
 
     def robot_stop(self):
         # Replace current trajectory with stopping trajectory
@@ -458,7 +604,28 @@ class RobotMover(object):
                 print("Position " + cmd[2] + " removed.")
             else:
                 rospy.loginfo("Not enough arguments, expected REMOVE POSITION [position name]")
-            
+
+        #_______________ TAKE TOOL__________________________
+        elif cmd[0] == 'TAKE':
+            if cmd[1] == 'NEW':
+                if len(cmd) == 2:
+                    # Pickup new tool
+                    self.pickup_tool()
+                elif self.waiting_for_tool_name:
+                    # Save tool with name and take it to empty position
+                    self.save_tool(cmd[2])
+            elif len(cmd) > 1:
+                self.pickup_tool(cmd[1])
+            else:
+                rospy.loginfo("Not enough arguments, expected TAKE [tool name] or TAKE NEW TOOL")
+
+        #___________________GIVE TOOL____________________________
+        elif cmd[0] == 'GIVE':
+            if len(cmd) > 1:
+                self.give_tool(cmd[1])
+            else:
+                rospy.loginfo("Not enough arguments, expected GIVE [tool name]")
+
             
         #___________________TASK RECORDINGS______________________
         elif cmd[0] == 'RECORD':
@@ -482,8 +649,7 @@ class RobotMover(object):
                         if step[0] == 'pose':
                             waypoints.append(copy.deepcopy(step[1]))
                         elif len(waypoints) > 0:
-                            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
-                            self.move_group.execute(plan, wait=True)
+                            self.move_robot(waypoints)
                             waypoints = []
                         if step[0] == 'gripper':
                             if step[1] == 'open':
@@ -493,8 +659,7 @@ class RobotMover(object):
                             elif step[1] == 'close':
                                 self.close_gripper()
                     if len(waypoints) > 0:
-                        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
-                        self.move_group.execute(plan, wait=True)
+                        self.move_robot(waypoints)
                 else:
                     print("Executing task failed: Task name " + cmd[1] + " not in recorded tasks.")
             else:

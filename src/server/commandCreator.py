@@ -68,10 +68,12 @@ class CommandCreator(object):
             'other' : 'OTHER',
             'opposite' : 'OPPOSITE', 
             'counter' : 'COUNTER',
-            'corner' : 'CORNER',
             'velocity' : 'VELOCITY',
             'speed' : 'VELOCITY',
-            'recover' : 'RECOVER'
+            'recover' : 'RECOVER',
+            'take' : 'TAKE',
+            'give' : 'GIVE',
+            'name' : 'NAME'
         }
 
 
@@ -139,7 +141,7 @@ class CommandCreator(object):
                 return None
             else:
                 command = self.all_words_lookup_table.get(words.pop(0))
-        
+                
         if command == "START":
             return self.get_start_command(words)
         elif command == "STOP":
@@ -263,6 +265,25 @@ class CommandCreator(object):
         elif command == "POSITION" or command == "SPOT":
             position_name = self.get_name(words)
             return ["POSITION", position_name]
+
+        #___________________TAKE TOOL________________________
+        elif command == "TAKE":
+            tool = self.get_name(words)
+            if tool == "NEWtool":
+                print("Give name for tool with command: 'NAME' [tool name]")
+                return ["TAKE", "NEW"]
+            elif tool != None:
+                return ["TAKE", tool]
+        
+        elif command == "NAME":
+            tool = self.get_name(words)
+            print("Tool name is: ", tool)
+            return ["TAKE", "NEW", tool]
+
+        #___________________GIVE TOOL_________________________
+        elif command == "GIVE":
+            tool = self.get_name(words)
+            return ["GIVE", tool]
 
 
         elif type(command) == str:
