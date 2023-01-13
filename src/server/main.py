@@ -81,6 +81,8 @@ try:
                 if ROS_ENABLED:
                     pub.publish(cmdString)
             cmd = None
+        elif words != None:
+            pub.publish('INVALID')
 
 except Exception as e:
     print('Exception', e)

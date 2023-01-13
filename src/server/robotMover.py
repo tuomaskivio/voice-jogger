@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import time
 import sys
 import copy
 import rospy
@@ -152,6 +153,7 @@ class RobotMover(object):
             self.move_robot(waypoints)
         else:
             rospy.loginfo("Position " + position + " not saved.")
+            self.shake_gripper()
             
             
     def move_robot_cartesian(self, direction, stepSize):
@@ -225,8 +227,10 @@ class RobotMover(object):
         # Joit 7 limits. max: 2.8973, min: -2.8973
         if joint_goal[6] + stepSize >= 2.8973:
             print("Joint 7 upper limit reached. Rotate counter-clockwise. Command: ROTATE BACK")
+            self.shake_gripper()
         elif joint_goal[6] + stepSize <= -2.8973:
             print("Joint 7 lower limit reached. Rotate clockwise. Command: ROTATE")
+            self.shake_gripper()
         else:
             joint_goal[6] = joint_goal[6] + stepSize
             value2decimals = "{:.2f}".format(joint_goal[6])
@@ -238,11 +242,13 @@ class RobotMover(object):
     def give_tool(self, name):
         if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
             rospy.loginfo("Corners not saved")
+            self.shake_gripper()
             return
 
         # If there isn't saved position, dont't do nothing but inform user
         if name not in self.saved_positions.keys():
             rospy.loginfo("Position " + name + " not saved.")
+            self.shake_gripper()
             return
 
         target = copy.deepcopy(self.saved_positions[name])
@@ -275,6 +281,7 @@ class RobotMover(object):
     def pickup_tool(self, name=""):
         if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
             rospy.loginfo("Corners not saved")
+            self.shake_gripper()
             return
 
         target = copy.deepcopy(self.saved_positions["CORNER2"])
@@ -316,6 +323,7 @@ class RobotMover(object):
     def save_tool(self, name):
         if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
             rospy.loginfo("Corners not saved")
+            self.shake_gripper()
             return
 
         orig_target = copy.deepcopy(self.saved_positions["CORNER1"])
@@ -329,7 +337,9 @@ class RobotMover(object):
                 target.position.y += self.object_size * 2
                 if target.position.y + self.object_size > self.saved_positions["CORNER2"].position.y:
                     rospy.loginfo("Table is full")
+                    self.shake_gripper()
                     self.open_gripper()
+                    self.waiting_for_tool_name = False
                     return
         target.position.z = self.saved_positions["CORNER1"].position.z + self.default_pickup_height
         # Save tool position
@@ -403,6 +413,22 @@ class RobotMover(object):
         self.error_recovery()
         rospy.loginfo("Started")
 
+    def shake_gripper(self):
+        if self.stopped:
+            return
+        joint_goal = self.move_group.get_current_joint_values()
+        step_size = 0.1
+        # Joit 7 limits. max: 2.8973, min: -2.8973
+        if joint_goal[6] + step_size >= 2.8973:
+            step_size = -1 * step_size
+            
+        joint_goal[6] = joint_goal[6] + step_size
+        self.move_group.set_max_velocity_scaling_factor(velocities[Velocity.HIGH])
+        self.move_group.go(joint_goal, wait=True)
+        joint_goal[6] = joint_goal[6] - step_size
+        self.move_group.go(joint_goal, wait=True)
+        self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
+
     def handle_received_priority_command(self, command):
         if type(command) == String:
             cmd = command.data.split(' ')
@@ -472,6 +498,7 @@ class RobotMover(object):
 
             else:
                 rospy.loginfo("Command not found.")
+                self.shake_gripper()
         
         elif cmd[0] == "UP":
             if len(cmd) > 1:
@@ -531,6 +558,7 @@ class RobotMover(object):
                     except ValueError:
                         rospy.loginfo('Invalid gripper command "%s" received, available commands are:', cmd[1])
                         rospy.loginfo('OPEN, CLOSE, ROTATE or distance between fingers in units mm between 0-80')
+                        self.shake_gripper()
             if len(cmd) == 3:
                 if cmd[1] == "ROTATE" or cmd[1] == "TURN" or cmd[1] == "SPIN":
                     if cmd[2] == 'BACK':
@@ -560,6 +588,7 @@ class RobotMover(object):
                 rospy.loginfo("Mode: DIRECTION AND DISTANCE.")
             else:
                 rospy.loginfo("Command not found.")
+                self.shake_gripper()
 
 
         #________________CHANGE STEP SIZE________________________
@@ -575,6 +604,7 @@ class RobotMover(object):
                 rospy.loginfo("Step size HIGH (10 cm)")
             else:
                 rospy.loginfo("Command not found.")
+                self.shake_gripper()
 
 
         #________________CHANGE VELOCITY________________________
@@ -590,6 +620,7 @@ class RobotMover(object):
                 rospy.loginfo("Velocity HIGH")
             else:
                 rospy.loginfo("Command not found.")
+                self.shake_gripper()
 
 
         #________________SAVE ROBOT POSITION_____________________
@@ -610,6 +641,7 @@ class RobotMover(object):
                 print("Position " + cmd[2] + " removed.")
             else:
                 rospy.loginfo("Not enough arguments, expected REMOVE POSITION [position name]")
+                self.shake_gripper()
 
         #_______________ TAKE TOOL__________________________
         elif cmd[0] == 'TAKE':
@@ -620,10 +652,14 @@ class RobotMover(object):
                 elif self.waiting_for_tool_name:
                     # Save tool with name and take it to empty position
                     self.save_tool(cmd[2])
+                else:
+                    print('No tool to name')
+                    self.shake_gripper()
             elif len(cmd) > 1:
                 self.pickup_tool(cmd[1])
             else:
                 rospy.loginfo("Not enough arguments, expected TAKE [tool name] or TAKE NEW TOOL")
+                self.shake_gripper()
 
         #___________________GIVE TOOL____________________________
         elif cmd[0] == 'GIVE':
@@ -631,6 +667,7 @@ class RobotMover(object):
                 self.give_tool(cmd[1])
             else:
                 rospy.loginfo("Not enough arguments, expected GIVE [tool name]")
+                self.shake_gripper()
 
             
         #___________________TASK RECORDINGS______________________
@@ -643,6 +680,7 @@ class RobotMover(object):
                     self.saved_tasks[self.recording_task_name]["moves"] = []
             else:
                 print("RECORD error: give task name.")
+                self.shake_gripper()
         
         elif cmd[0] == 'TASK' or cmd[0] == 'DO' or cmd[0] == 'PLAY':
             if len(cmd) > 1:
@@ -668,8 +706,10 @@ class RobotMover(object):
                         self.move_robot(waypoints)
                 else:
                     print("Executing task failed: Task name " + cmd[1] + " not in recorded tasks.")
+                    self.shake_gripper()
             else:
                 print("Executing task failed: Correct command: TASK/DO/PLAY [task name]")
+                self.shake_gripper()
 
 
         #___________________TEXT FILE HANDLING______________________
@@ -694,15 +734,19 @@ class RobotMover(object):
                     print("")
                 else:
                     print("Listing failed. List tasks: LIST TASKS. List positions: LIST POSITIONS.")
+                    self.shake_gripper()
             else:
                 print("Listing failed. List tasks: LIST TASKS. List positions: LIST POSITIONS.")
+                self.shake_gripper()
 
 
         elif cmd[0] == 'REMOVE':
             if len(cmd) < 2:
                 print("REMOVE error: give task name.")
+                self.shake_gripper()
             elif len(cmd) > 2:
                 print("REMOVE error: Too many arguments.")
+                self.shake_gripper()
             else:
                 if cmd[1] in self.saved_tasks.keys():
                     tfh.deleteItem("tasks.txt", cmd[1])
@@ -710,9 +754,11 @@ class RobotMover(object):
                     print("Task " + cmd[1] + " removed.")
                 else:
                     print("REMOVE error: No task named " + cmd[1] + " found. Use LIST TASK command too see tasks.")
+                    self.shake_gripper()
                 
         else:
             print("Command not found.")
+            self.shake_gripper()
           
         #___________________RECORD WAYPOINT______________________
         if self.recording_task_name is not None:
