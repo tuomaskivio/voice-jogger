@@ -54,12 +54,25 @@ class Server:
                     data = q.get()
 
                     words = rec.speech_to_text(data)
+
+                    chained_command = False
+
                     if words != None:
                         # mode: step mode. Faster response time, because in the direction and distance mode, distance needs to be recognized.
                         self.commandCreator.original_words = words
                         cmd = self.commandCreator.getCommand(True)
 
                     if cmd is not None:
+                        #check if there will be another command
+                        next_words, is_and, is_end_of_and = self.commandCreator.check_if_chained(words)
+                        if next_words is not None:
+                            chained_command = True
+                            try:
+                                cmd.append(is_and)
+                                cmd.append(is_end_of_and)
+                            except:
+                                pass
+
                         #start_robot means start sending commands
                         if cmd[0] == 'START':
                             self.start_robot = True
@@ -83,7 +96,8 @@ class Server:
                             print('Sending Command to ROS: ', cmdString)
                             if ROS_ENABLED:
                                 self.pub.publish(cmdString)
-                            self.__check_chained__(words)
+                            if chained_command:
+                                self.__check_chained__(next_words)
                         cmd = None
 
             except Exception as e:
@@ -97,18 +111,24 @@ class Server:
                 while not q.empty():
                     q.get()
 
-    def __check_chained__(self, raw_words):
-        words = self.commandCreator.check_if_chained(raw_words)
-        if words is None:
-            return
+    def __check_chained__(self, words):
+        chained_command = False
         self.commandCreator.original_words = words
         cmd = self.commandCreator.getCommand(True)
+        next_words, is_and, is_end_of_and = self.commandCreator.check_if_chained(words)
+        if next_words is not None:
+            chained_command = True
+            try:
+                cmd.append(is_and)
+                cmd.append(is_end_of_and)
+            except:
+                pass
 
         if cmd is not None:
 
             #start_robot means start sending commands
             if cmd[0] == 'START':
-                start_robot = True
+                self.start_robot = True
                 print('Starting with command: ', cmd)
                 print(f'Sending configuration to ROS. mode: {commandCreator.mode} step_size: {commandCreator.step_size}')
                 if ROS_ENABLED:
@@ -130,7 +150,8 @@ class Server:
                 print('Sending Command to ROS: ', cmdString)
                 if ROS_ENABLED:
                     self.pub.publish(cmdString)
-            self.__check_chained__(words)
+            if chained_command:
+                self.__check_chained__(next_words)
 
 
 

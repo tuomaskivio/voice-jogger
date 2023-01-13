@@ -75,6 +75,7 @@ class RobotMover(object):
         self.recording_task_name = None
         self.saved_positions = tfh.load_position()
         self.saved_tasks = tfh.load_task()
+        self.multiple_waypoints = []
         
         
     def move_gripper_home(self):
@@ -109,10 +110,17 @@ class RobotMover(object):
             rospy.loginfo("Position " + position + " not saved.")
             
             
-    def move_robot_cartesian(self, direction, stepSize):
+    def move_robot_cartesian(self, direction, stepSize, is_and=False, is_end_of_and=False):
         rospy.loginfo("Mode: " + self.mode + " " + direction + " " + str(stepSize) + " m")
         
         waypoints = []
+        print(is_and, is_end_of_and)
+        #is_end_of_and = False
+        if is_and and is_end_of_and:
+            for waypoint in self.multiple_waypoints:
+                waypoints.append(waypoint)
+            print("waypoints added")
+
         robot_pose = self.move_group.get_current_pose().pose
         
         if direction == "up":
@@ -127,10 +135,21 @@ class RobotMover(object):
             robot_pose.position.x += stepSize
         if direction == "backward":
             robot_pose.position.x -= stepSize
-            
-        waypoints.append(copy.deepcopy(robot_pose))
+
+        waypoint = copy.deepcopy(robot_pose)
+        waypoints.append(waypoint)
+        if is_and:
+            self.multiple_waypoints.append(waypoint)
+            print(len(self.multiple_waypoints))
+            if is_end_of_and == False:
+                print("no end")
+                return
+            print(is_and, is_end_of_and)
+
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
         self.move_group.execute(plan, wait=True)
+
+        self.multiple_waypoints = []
         
     def open_gripper(self):
         if self.recording_task_name is not None:
@@ -232,6 +251,20 @@ class RobotMover(object):
         
         elif cmd[0] == "MOVE":
 
+            and_bool_parameter = False
+            is_end_bool_parameter = False
+            if cmd[1] != 'POSITION':
+                if self.mode == 'STEP':
+                    if len(cmd) > 2:
+                        and_bool_parameter = cmd[2]
+                    if len(cmd) > 3:
+                        is_end_bool_parameter = cmd[3]
+                elif self.mode == 'DISTANCE':
+                    if len(cmd) > 3:
+                        and_bool_parameter = cmd[3]
+                    if len(cmd) > 4:
+                        is_end_bool_parameter = cmd[4]
+
             # step size depend on mode
             if self.mode == 'STEP':
                 stepSize = self.step_size
@@ -239,17 +272,17 @@ class RobotMover(object):
                 stepSize = float(cmd[2]) / 1000
 
             if cmd[1] == "UP":
-                self.move_robot_cartesian("up", stepSize)
+                self.move_robot_cartesian("up", stepSize, and_bool_parameter, is_end_bool_parameter)
             elif cmd[1] == "DOWN":
-                self.move_robot_cartesian("down", stepSize)
+                self.move_robot_cartesian("down", stepSize, and_bool_parameter, is_end_bool_parameter)
             elif cmd[1] == "LEFT":
-                self.move_robot_cartesian("left", stepSize)
+                self.move_robot_cartesian("left", stepSize, and_bool_parameter, is_end_bool_parameter)
             elif cmd[1] == "RIGHT":
-                self.move_robot_cartesian("right", stepSize)
+                self.move_robot_cartesian("right", stepSize, and_bool_parameter, is_end_bool_parameter)
             elif cmd[1] == "FORWARD":
-                self.move_robot_cartesian("forward", stepSize)
+                self.move_robot_cartesian("forward", stepSize, and_bool_parameter, is_end_bool_parameter)
             elif cmd[1] == "BACKWARD":
-                self.move_robot_cartesian("backward", stepSize)
+                self.move_robot_cartesian("backward", stepSize, and_bool_parameter, is_end_bool_parameter)
 
             elif cmd[1] == 'POSITION': # move robot to saved position
                 self.move_robot_to_position(cmd[2])
@@ -257,43 +290,57 @@ class RobotMover(object):
 
             else:
                 rospy.loginfo("Command not found.")
-        
+
+        and_bool_parameter = False
+        is_end_bool_parameter = False
+        if cmd[0] != 'POSITION':
+            if self.mode == 'STEP':
+                if len(cmd) > 1:
+                    and_bool_parameter = cmd[1]
+                if len(cmd) > 2:
+                    is_end_bool_parameter = cmd[2]
+            elif self.mode == 'DISTANCE':
+                if len(cmd) > 2:
+                    and_bool_parameter = cmd[2]
+                if len(cmd) > 3:
+                    is_end_bool_parameter = cmd[3]
+
         elif cmd[0] == "UP":
             if len(cmd) > 1:
                 stepsize = get_number(cmd[1:]) / 1000
             else:
                 stepsize = self.step_size
-            self.move_robot_cartesian("up", stepsize)
+            self.move_robot_cartesian("up", stepsize, and_bool_parameter, is_end_bool_parameter)
         elif cmd[0] == "DOWN":
             if len(cmd) > 1:
                 stepsize = float(get_number(cmd[1:])) / 1000
             else:
                 stepsize = self.step_size
-            self.move_robot_cartesian("down", stepsize)
+            self.move_robot_cartesian("down", stepsize, and_bool_parameter, is_end_bool_parameter)
         elif cmd[0] == "LEFT":
             if len(cmd) > 1:
                 stepsize = float(get_number(cmd[1:])) / 1000
             else:
                 stepsize = self.step_size
-            self.move_robot_cartesian("left", stepsize)
+            self.move_robot_cartesian("left", stepsize, and_bool_parameter, is_end_bool_parameter)
         elif cmd[0] == "RIGHT":
             if len(cmd) > 1:
                 stepsize = float(get_number(cmd[1:])) / 1000
             else:
                 stepsize = self.step_size
-            self.move_robot_cartesian("right", stepsize)
+            self.move_robot_cartesian("right", stepsize, and_bool_parameter, is_end_bool_parameter)
         elif cmd[0] == "FORWARD" or cmd[0] == "FRONT":
             if len(cmd) > 1:
                 stepsize = float(get_number(cmd[1:])) / 1000
             else:
                 stepsize = self.step_size
-            self.move_robot_cartesian("forward", stepsize)
+            self.move_robot_cartesian("forward", stepsize, and_bool_parameter, is_end_bool_parameter)
         elif cmd[0] == "BACKWARD" or cmd[0] == "BACK":
             if len(cmd) > 1:
                 stepsize = float(get_number(cmd[1:])) / 1000
             else:
                 stepsize = self.step_size
-            self.move_robot_cartesian("backward", stepsize)
+            self.move_robot_cartesian("backward", stepsize, and_bool_parameter, is_end_bool_parameter)
             
         elif cmd[0] == 'POSITION': # move robot to saved position
             self.move_robot_to_position(cmd[1])
