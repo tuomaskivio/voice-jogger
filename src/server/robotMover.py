@@ -90,7 +90,7 @@ class RobotMover(object):
 
         # class constants
         self.pickup_area_offset = 0.1
-        self.pickup_approach_height = 0.3
+        self.pickup_approach_height = 0.15
         self.default_pickup_height = 0.02
         self.object_size = 0.05
         self.home = [0, -0.785, 0, -2.356, 0, 1.571, 0.785]
@@ -228,6 +228,43 @@ class RobotMover(object):
             print(joint_goal[6])
             self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
             self.move_group.go(joint_goal, wait=True)
+
+    def give_tool(self, name):
+        if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
+            rospy.loginfo("Corners not saved")
+            return
+
+        # If there isn't saved position, dont't do nothing but inform user
+        if name not in self.saved_positions.keys():
+            rospy.loginfo("Position " + name + " not saved.")
+            return
+
+        target = copy.deepcopy(self.saved_positions[name])
+        approach_target = copy.deepcopy(target)
+        approach_target.position.z += self.pickup_approach_height
+        # Pick up tool
+        waypoints = []
+        waypoints.append(approach_target)
+        waypoints.append(target)
+        self.open_gripper()
+        self.move_robot(waypoints)
+        self.close_gripper()
+        # Drop tool
+        target2 = copy.deepcopy(self.saved_positions["CORNER2"])
+        target2.position.x -= self.pickup_area_offset
+        target2.position.y -= self.pickup_area_offset
+        approach_target2 = copy.deepcopy(target2)
+        approach_target2.position.z += self.pickup_approach_height
+        target2.position.z = self.saved_positions[name].position.z
+        waypoints = []
+        waypoints.append(approach_target)
+        waypoints.append(approach_target2)
+        waypoints.append(target2)
+        self.move_robot(waypoints)
+        self.open_gripper()
+        # Move up
+        self.move_robot([approach_target2])
+
 
     def pickup_tool(self, name=""):
         if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
@@ -578,9 +615,17 @@ class RobotMover(object):
                     # Save tool with name and take it to empty position
                     self.save_tool(cmd[2])
             elif len(cmd) > 1:
-                self.move_robot_to_position(cmd[1])
+                self.pickup_tool(cmd[1])
             else:
-                rospy.loginfo("Not enough arguments, expected TAKE [tool name] or TAKE NEW TOOL")            
+                rospy.loginfo("Not enough arguments, expected TAKE [tool name] or TAKE NEW TOOL")
+
+        #___________________GIVE TOOL____________________________
+        elif cmd[0] == 'GIVE':
+            if len(cmd) > 1:
+                self.give_tool(cmd[1])
+            else:
+                rospy.loginfo("Not enough arguments, expected GIVE [tool name]")
+
             
         #___________________TASK RECORDINGS______________________
         elif cmd[0] == 'RECORD':

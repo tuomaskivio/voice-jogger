@@ -270,14 +270,21 @@ class CommandCreator(object):
         elif command == "TAKE":
             tool = self.get_name(words)
             if tool == "NEWtool":
-                self.holding_new_tool = True
                 print("Give name for tool with command: 'NAME' [tool name]")
                 return ["TAKE", "NEW"]
+            elif tool != None:
+                return ["TAKE", tool]
         
         elif command == "NAME":
             tool = self.get_name(words)
             print("Tool name is: ", tool)
             return ["TAKE", "NEW", tool]
+
+        #___________________GIVE TOOL_________________________
+        elif command == "GIVE":
+            tool = self.get_name(words)
+            return ["GIVE", tool]
+
 
         elif type(command) == str:
             # Command from all_words_lookup_table
