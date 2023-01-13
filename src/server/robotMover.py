@@ -10,6 +10,9 @@ import moveit_msgs.msg
 import geometry_msgs.msg
 
 from std_msgs.msg import String
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryActionGoal
+from franka_msgs.msg import ErrorRecoveryActionGoal
 from word2number import w2n
 from franka_gripper.msg import ( GraspAction, GraspGoal,
                                  HomingAction, HomingGoal,
@@ -18,6 +21,17 @@ from franka_gripper.msg import ( GraspAction, GraspGoal,
                                  GraspEpsilon )
 
 import textFileHandler as tfh
+
+from enum import Enum
+class Velocity(Enum):
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+velocities = {
+    Velocity.LOW: 0.05,
+    Velocity.MEDIUM: 0.2,
+    Velocity.HIGH: 1.0
+}
 
 class RobotMover(object):
     def __init__(self):
@@ -62,6 +76,19 @@ class RobotMover(object):
         self.move_action_client = actionlib.SimpleActionClient('/franka_gripper/move', MoveAction)
         self.stop_action_client = actionlib.SimpleActionClient('/franka_gripper/stop', StopAction)
 
+        # Publish to joint trajectory controller
+        self.joint_trajectory_goal_pub = rospy.Publisher(
+                                      '/position_joint_trajectory_controller/follow_joint_trajectory/goal',
+                                      FollowJointTrajectoryActionGoal, 
+                                      queue_size = 10)
+
+        # Publish to error recovery topic
+        self.error_recovery_pub = rospy.Publisher(
+                                        '/franka_control/error_recovery/goal',
+                                        ErrorRecoveryActionGoal,
+                                        queue_size = 10)
+
+
         # class variables
         self.home = [0, -0.785, 0, -2.356, 0, 1.571, 0.785]
         self.stopped = True
@@ -75,6 +102,7 @@ class RobotMover(object):
         self.recording_task_name = None
         self.saved_positions = tfh.load_position()
         self.saved_tasks = tfh.load_task()
+        self.velocity = Velocity.MEDIUM
         
         
     def move_gripper_home(self):
@@ -87,11 +115,13 @@ class RobotMover(object):
         pose.orientation.z = 0
         pose.orientation.w = 0
         
+        self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
         (plan, fraction) = self.move_group.compute_cartesian_path([pose], 0.01, 0.0)  # jump_threshold
         self.move_group.execute(plan, wait=True)
 
 
     def move_robot_home(self):
+        self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
         self.move_group.go(self.home, wait=True)
         self.move_group.stop()
     
@@ -104,6 +134,7 @@ class RobotMover(object):
             waypoints = []
             waypoints.append(copy.deepcopy(target))
             (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+            plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = velocities[self.velocity])
             self.move_group.execute(plan, wait=True)
         else:
             rospy.loginfo("Position " + position + " not saved.")
@@ -130,6 +161,7 @@ class RobotMover(object):
             
         waypoints.append(copy.deepcopy(robot_pose))
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+        plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan, velocity_scaling_factor = velocities[self.velocity])
         self.move_group.execute(plan, wait=True)
         
     def open_gripper(self):
@@ -179,17 +211,44 @@ class RobotMover(object):
             value2decimals = "{:.2f}".format(joint_goal[6])
             rospy.loginfo("Gripper rotated. Joint 7 value: " + value2decimals + ". Max: 2.90, Min: -2.90.")
             print(joint_goal[6])
+            self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
             self.move_group.go(joint_goal, wait=True)
 
     def robot_stop(self):
-        self.move_group.stop()
+        # Replace current trajectory with stopping trajectory
+        joint_values = self.move_group.get_current_joint_values()
+        print(joint_values)
+        stop_trajectory = JointTrajectory()
+        stop_trajectory.joint_names = ['panda_joint1',
+                                       'panda_joint2',
+                                       'panda_joint3',
+                                       'panda_joint4',
+                                       'panda_joint5',
+                                       'panda_joint6',
+                                       'panda_joint7']
+        stop_trajectory.points.append(JointTrajectoryPoint())
+        stop_trajectory.points[0].positions = joint_values
+        stop_trajectory.points[0].velocities = [0.0 for i in joint_values]
+        stop_trajectory.points[0].time_from_start = rospy.Duration(1) # Stopping time
+        stop_trajectory.header.frame_id = 'world'
+        stop_goal = FollowJointTrajectoryActionGoal()
+        stop_goal.goal.trajectory = stop_trajectory
+        self.joint_trajectory_goal_pub.publish(stop_goal)
+
+        # Stop gripper
         goal = StopGoal()
         self.stop_action_client.send_goal(goal)
         self.stopped = True
         rospy.loginfo("Stopped")
 
+    def error_recovery(self):
+        error_recovery_goal = ErrorRecoveryActionGoal()
+        self.error_recovery_pub.publish(error_recovery_goal)
+        rospy.loginfo("Recovered from errors")
+
     def robot_start(self):
         self.stopped = False
+        self.error_recovery()
         rospy.loginfo("Started")
 
     def handle_received_priority_command(self, command):
@@ -221,13 +280,17 @@ class RobotMover(object):
                 self.recording_task_name = None
             elif cmd[0] == "RECORD":
                 pass
+            else:
+                self.saved_tasks[self.recording_task_name]["moves"].append(cmd)
 
-        #________________START COMMAND___________________________
-        if cmd[0] == "START":
+        #________________STATUS COMMANDS_________________________
+        if cmd[0] == 'START':
             self.robot_start()
+        elif cmd[0] == 'RECOVER':
+            self.error_recovery()
 
         #________________MOVE COMMANDS___________________________
-        if cmd[0] == "HOME":
+        elif cmd[0] == "HOME":
             self.move_robot_home()
         
         elif cmd[0] == "MOVE":
@@ -362,6 +425,21 @@ class RobotMover(object):
                 rospy.loginfo("Command not found.")
 
 
+        #________________CHANGE VELOCITY________________________
+        elif cmd[0] == 'VELOCITY':
+            if cmd[1] == 'LOW':
+                self.velocity = Velocity.LOW
+                rospy.loginfo("Velocity LOW")
+            elif cmd[1] == 'MEDIUM':
+                self.velocity = Velocity.MEDIUM
+                rospy.loginfo("Velocity MEDIUM")
+            elif cmd[1] == 'HIGH':
+                self.velocity = Velocity.HIGH
+                rospy.loginfo("Velocity HIGH")
+            else:
+                rospy.loginfo("Command not found.")
+
+
         #________________SAVE ROBOT POSITION_____________________
         elif cmd[0] == 'SAVE' and cmd[1] == 'POSITION':
             if cmd[2] in self.saved_positions.keys():
@@ -464,11 +542,11 @@ class RobotMover(object):
                 
         else:
             print("Command not found.")
-
+          
         #___________________RECORD WAYPOINT______________________
         if self.recording_task_name is not None:
             pose = copy.deepcopy(self.move_group.get_current_pose().pose)
-            self.saved_tasks[self.recording_task_name]["moves"].append(['pose', pose])
+            self.saved_tasks[self.recording_task_name]["moves"].append(['pose', pose])  
 
 def get_number(words):
     number_words = copy.copy(words)
