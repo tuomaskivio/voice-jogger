@@ -67,7 +67,8 @@ class CommandCreator(object):
             'spot' : 'SPOT',
             'other' : 'OTHER',
             'opposite' : 'OPPOSITE', 
-            'counter' : 'COUNTER'
+            'counter' : 'COUNTER',
+            'corner' : 'CORNER'
         }
 
 
@@ -232,12 +233,20 @@ class CommandCreator(object):
 
         #___________________SAVE POSITION______________________________
         elif command == "SAVE":
-            if self.all_words_lookup_table.get(words.pop(0), '') in ['POSITION', 'SPOT']:
+            cmd = self.all_words_lookup_table.get(words.pop(0), '')
+            if cmd in ['POSITION', 'SPOT']:
                 position_name = self.get_name(words)
                 if position_name is not None:
                     return ['SAVE', 'POSITION', position_name]
                 else:
                     print('Invalid ' + command + ' command. Correct form: SAVE POSITION/SPOT [position name]')
+                    return None
+            elif cmd == 'CORNER':
+                corner_num = self.get_number(words)
+                if corner_num in [1,2]:
+                    return ['SAVE', 'POSITION', 'CORNER' + str(corner_num)]
+                else:
+                    print('Invalid ' + command + ' command. Correct form: SAVE CORNER [1/2]')
                     return None
             else:
                 print('Invalid ' + command + ' command. Correct form: SAVE POSITION/SPOT [position name]')
