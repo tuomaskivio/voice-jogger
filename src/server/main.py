@@ -13,7 +13,7 @@ RATE = 16000
 CHUNK = 1280
 PORT = 50005
 ROS_ENABLED = True
-DEBUG = True
+DEBUG = False
 
 if ROS_ENABLED:
     # ROS

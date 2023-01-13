@@ -33,6 +33,8 @@ velocities = {
     Velocity.HIGH: 1.0
 }
 
+SIMULATION = False
+
 class RobotMover(object):
     def __init__(self):
         super(RobotMover, self).__init__()
@@ -77,8 +79,12 @@ class RobotMover(object):
         self.stop_action_client = actionlib.SimpleActionClient('/franka_gripper/stop', StopAction)
 
         # Publish to joint trajectory controller
+        if SIMULATION:
+            joint_trajectory_topic = '/effort_joint_trajectory_controller/follow_joint_trajectory/goal'
+        else:
+            joint_trajectory_topic = '/position_joint_trajectory_controller/follow_joint_trajectory/goal'
         self.joint_trajectory_goal_pub = rospy.Publisher(
-                                      '/position_joint_trajectory_controller/follow_joint_trajectory/goal',
+                                      joint_trajectory_topic,
                                       FollowJointTrajectoryActionGoal, 
                                       queue_size = 10)
 
