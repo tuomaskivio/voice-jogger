@@ -50,6 +50,7 @@ class CommandCreator(object):
             'close' : 'CLOSE',
             'grasp' : 'GRASP',
             'rotate' : 'ROTATE',
+            'give' : 'GIVE',
             'list' : 'LIST',
             'show' : 'SHOW',
             'task' : 'TASK',
@@ -254,6 +255,16 @@ class CommandCreator(object):
         elif command == "POSITION" or command == "SPOT":
             position_name = self.get_name(words)
             return ["POSITION", position_name]
+
+        # ___________________GIVE___________________________
+        elif command =='GIVE':
+            if self.all_words_lookup_table.get(words[0], '') in ['POSITION', 'SPOT']:
+                words.pop(0)
+                position_name = self.get_name(words)
+                return ["GIVE", "POSITION", position_name]
+            else:
+                print('Invalid ' + command + ' command. Correct form: REMOVE/DELETE [task name]')
+                return None
 
 
         elif type(command) == str:

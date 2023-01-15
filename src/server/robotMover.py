@@ -214,6 +214,48 @@ class RobotMover(object):
             self.move_group.set_max_velocity_scaling_factor(velocities[self.velocity])
             self.move_group.go(joint_goal, wait=True)
 
+    def give_object(self, position):
+        # Give object from a saved position
+
+        #if position in self.saved_positions.keys():
+            grasp = self.saved_positions[position]
+            pre_grasp = grasp
+            pre_grasp.position.y += 0.1
+            target_pos = self.saved_positions["Target"]
+            pre_target = target_pos
+            pre_target.position.y += 0.1
+
+            # Grasp object
+
+            waypoints = []
+            #waypoints.append(copy.deepcopy(pre_grasp))
+            waypoints.append(copy.deepcopy(grasp))
+            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
+            plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan,
+                                                     velocity_scaling_factor=velocities[self.velocity])
+            self.move_group.execute(plan, wait=True)
+            #self.move_robot_to_position(grasp)
+            self.close_gripper()
+
+            waypoints2 = []
+            #waypoints2.append(copy.deepcopy(pre_target))
+            waypoints2.append(copy.deepcopy(target_pos))
+            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints2, 0.01, 0.0)  # jump_threshold
+            plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan,
+                                                     velocity_scaling_factor=velocities[self.velocity])
+            self.move_group.execute(plan, wait=True)
+            #self.move_robot_to_position(target_pos)
+            self.open_gripper()
+
+            print("Object given")
+
+       # else:
+           # rospy.loginfo("Position " + position + " not saved.")
+
+        # Muuta 100m ros koordinaateiksi, kutsu robotmoveri liikuttamaan pre-graspiin, sitten graspiin, sulkemaan gripperin
+        #viemään pre-placeen ja lopulta placeen. Tee tutkinta onko position ja place annettu.
+
+
     def robot_stop(self):
         # Replace current trajectory with stopping trajectory
         joint_values = self.move_group.get_current_joint_values()
@@ -397,7 +439,10 @@ class RobotMover(object):
                     self.rotate_gripper(self.step_size, False)
 
 
-        
+        # ________________GIVE_____________________________
+        elif cmd[0] == "GIVE":
+            self.give_object(cmd[2])
+
         #________________CHANGE MODE_____________________________
         elif cmd[0] == "MODE":
             if cmd[1] == "STEP":
