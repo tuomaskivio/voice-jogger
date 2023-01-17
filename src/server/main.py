@@ -43,6 +43,7 @@ class Server:
 
             cmd = None
             self.start_robot = False
+            self.is_chain_going = False
             try:
 
                 while True:
@@ -64,12 +65,12 @@ class Server:
 
                     if cmd is not None:
                         #check if there will be another command
-                        next_words, is_and, is_end_of_and = self.commandCreator.check_if_chained(words)
+                        next_words, is_and = self.commandCreator.check_if_chained(words)
                         if next_words is not None:
                             chained_command = True
                             try:
                                 cmd.append(is_and)
-                                cmd.append(is_end_of_and)
+                                cmd.append(False)
                             except:
                                 pass
 
@@ -115,14 +116,18 @@ class Server:
         chained_command = False
         self.commandCreator.original_words = words
         cmd = self.commandCreator.getCommand(True)
-        next_words, is_and, is_end_of_and = self.commandCreator.check_if_chained(words)
+        next_words, is_and = self.commandCreator.check_if_chained(words)
         if next_words is not None:
             chained_command = True
             try:
                 cmd.append(is_and)
-                cmd.append(is_end_of_and)
+                cmd.append(False)
             except:
                 pass
+
+        else:
+            cmd.append(True)
+            cmd.append(True)
 
         if cmd is not None:
 

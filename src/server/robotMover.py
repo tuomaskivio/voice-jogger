@@ -76,6 +76,7 @@ class RobotMover(object):
         self.saved_positions = tfh.load_position()
         self.saved_tasks = tfh.load_task()
         self.multiple_waypoints = []
+        self.updating_waypoint = []
         
         
     def move_gripper_home(self):
@@ -116,12 +117,26 @@ class RobotMover(object):
         waypoints = []
         print(is_and, is_end_of_and)
         #is_end_of_and = False
-        if is_and and is_end_of_and:
-            for waypoint in self.multiple_waypoints:
-                waypoints.append(waypoint)
-            print("waypoints added")
 
         robot_pose = self.move_group.get_current_pose().pose
+
+        if is_and and len(self.updating_waypoint) != 0:
+            if direction == "up":
+                self.updating_waypoint[0].position.z += stepSize
+            if direction == "down":
+                self.updating_waypoint[0].position.z -= stepSize
+            if direction == "left":
+                self.updating_waypoint[0].position.y -= stepSize
+            if direction == "right":
+                self.updating_waypoint[0].position.y += stepSize
+            if direction == "forward":
+                self.updating_waypoint[0].position.x += stepSize
+            if direction == "backward":
+                self.updating_waypoint[0].position.x -= stepSize
+
+            if is_end_of_and == False:
+                print("no end")
+                return
         
         if direction == "up":
             robot_pose.position.z += stepSize
@@ -138,18 +153,29 @@ class RobotMover(object):
 
         waypoint = copy.deepcopy(robot_pose)
         waypoints.append(waypoint)
-        if is_and:
+
+        if is_and and len(self.updating_waypoint) == 0:
+            self.updating_waypoint.append(waypoint)
+            if is_end_of_and == False:
+                print("no end")
+                return
+        """if is_and:
             self.multiple_waypoints.append(waypoint)
             print(len(self.multiple_waypoints))
             if is_end_of_and == False:
                 print("no end")
                 return
-            print(is_and, is_end_of_and)
+            print(is_and, is_end_of_and)"""
+
+        if is_and and is_end_of_and:
+            waypoints.append(self.updating_waypoint[0])
+            print("waypoints added")
+
 
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
         self.move_group.execute(plan, wait=True)
 
-        self.multiple_waypoints = []
+        self.updating_waypoint = []
         
     def open_gripper(self):
         if self.recording_task_name is not None:
@@ -246,26 +272,65 @@ class RobotMover(object):
             self.robot_start()
 
         #________________MOVE COMMANDS___________________________
+        # Bool parameters for command chaining
+        and_bool_parameter = False
+        is_end_bool_parameter = False
+        if cmd[0] == "UP" or cmd[0] == "DOWN" or cmd[0] == "LEFT" or cmd[0] == "RIGHT" \
+                or cmd[0] == "FORWARD" or cmd[0] == "BACKWARD":
+            if self.mode == 'STEP':
+                if len(cmd) > 1:
+                    if cmd[1] == "False":
+                        and_bool_parameter = False
+                    else:
+                        and_bool_parameter = True
+                if len(cmd) > 2:
+                    if cmd[2] == "False":
+                        is_end_bool_parameter = False
+                    else:
+                        is_end_bool_parameter = True
+            elif self.mode == 'DISTANCE':
+                if len(cmd) > 2:
+                    if cmd[2] == "False":
+                        and_bool_parameter = False
+                    else:
+                        and_bool_parameter = True
+                if len(cmd) > 3:
+                    if cmd[3] == "False":
+                        is_end_bool_parameter = False
+                    else:
+                        is_end_bool_parameter = True
+
         if cmd[0] == "HOME":
             self.move_robot_home()
         
         elif cmd[0] == "MOVE":
 
-            and_bool_parameter = False
-            is_end_bool_parameter = False
             if cmd[1] != 'POSITION':
                 if self.mode == 'STEP':
                     if len(cmd) > 2:
-                        and_bool_parameter = cmd[2]
+                        if cmd[2] == "False":
+                            and_bool_parameter = False
+                        else:
+                            and_bool_parameter = True
                     if len(cmd) > 3:
-                        is_end_bool_parameter = cmd[3]
+                        if cmd[3] == "False":
+                            is_end_bool_parameter = False
+                        else:
+                            is_end_bool_parameter = True
                 elif self.mode == 'DISTANCE':
                     if len(cmd) > 3:
-                        and_bool_parameter = cmd[3]
+                        if cmd[3] == "False":
+                            and_bool_parameter = False
+                        else:
+                            and_bool_parameter = True
                     if len(cmd) > 4:
-                        is_end_bool_parameter = cmd[4]
+                        if cmd[4] == "False":
+                            is_end_bool_parameter = False
+                        else:
+                            is_end_bool_parameter = True
 
             # step size depend on mode
+            stepSize = self.step_size
             if self.mode == 'STEP':
                 stepSize = self.step_size
             if self.mode == 'DISTANCE':
@@ -291,19 +356,6 @@ class RobotMover(object):
             else:
                 rospy.loginfo("Command not found.")
 
-        and_bool_parameter = False
-        is_end_bool_parameter = False
-        if cmd[0] != 'POSITION':
-            if self.mode == 'STEP':
-                if len(cmd) > 1:
-                    and_bool_parameter = cmd[1]
-                if len(cmd) > 2:
-                    is_end_bool_parameter = cmd[2]
-            elif self.mode == 'DISTANCE':
-                if len(cmd) > 2:
-                    and_bool_parameter = cmd[2]
-                if len(cmd) > 3:
-                    is_end_bool_parameter = cmd[3]
 
         elif cmd[0] == "UP":
             if len(cmd) > 1:

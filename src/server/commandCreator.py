@@ -431,10 +431,10 @@ class CommandCreator(object):
                 if self.all_words_lookup_table.get(words[i]) == "AND":
                     is_and = True
 
-                if len(words) > i + 1:
+                """if len(words) > i + 1:
                     for j in range(i + 1, len(words)):
                         if self.all_words_lookup_table.get(words[j]) == "AND":
-                            is_end_of_and = False
+                            is_end_of_and = False"""
 
-                    return words[i+1:], is_and, is_end_of_and
-        return None, False, False
+                return words[i+1:], is_and
+        return None, False
