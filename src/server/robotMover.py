@@ -138,21 +138,22 @@ class RobotMover(object):
                 print("no end")
                 return
         
-        if direction == "up":
-            robot_pose.position.z += stepSize
-        if direction == "down":
-            robot_pose.position.z -= stepSize
-        if direction == "left":
-            robot_pose.position.y -= stepSize
-        if direction == "right":
-            robot_pose.position.y += stepSize
-        if direction == "forward":
-            robot_pose.position.x += stepSize
-        if direction == "backward":
-            robot_pose.position.x -= stepSize
+        else:
+            if direction == "up":
+                robot_pose.position.z += stepSize
+            if direction == "down":
+                robot_pose.position.z -= stepSize
+            if direction == "left":
+                robot_pose.position.y -= stepSize
+            if direction == "right":
+                robot_pose.position.y += stepSize
+            if direction == "forward":
+                robot_pose.position.x += stepSize
+            if direction == "backward":
+                robot_pose.position.x -= stepSize
 
-        waypoint = copy.deepcopy(robot_pose)
-        waypoints.append(waypoint)
+            waypoint = copy.deepcopy(robot_pose)
+            waypoints.append(waypoint)
 
         if is_and and len(self.updating_waypoint) == 0:
             self.updating_waypoint.append(waypoint)
