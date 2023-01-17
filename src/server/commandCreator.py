@@ -32,6 +32,7 @@ class CommandCreator(object):
             'go' : 'MOVE',
             'up' : 'UP',
             'down' : 'DOWN',
+            'again' : 'AGAIN',
             'left' : 'LEFT',
             'right' : 'RIGHT',
             'forward': 'FORWARD',
@@ -91,7 +92,7 @@ class CommandCreator(object):
 
                 # Can't do buffering if one of these words exists
                 if checked_word != None:
-                    if checked_word in ["MOVE", "RECORD", "REMOVE", "DELETE", 
+                    if checked_word in ["MOVE", "AGAIN", "RECORD", "REMOVE", "DELETE", 
                     "TASK", "DO", "PLAY", "SAVE", "POSITION", "SPOT"]:
                         self.buffering_ok = False
 

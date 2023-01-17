@@ -54,6 +54,7 @@ try:
             # mode: step mode. Faster response time, because in the direction and distance mode, distance needs to be recognized.
             commandCreator.original_words = words
             cmd = commandCreator.getCommand(True)
+            prev_cmd = None
 
         if cmd is not None:
             #start_robot means start sending commands
@@ -73,14 +74,24 @@ try:
                     pub_priority.publish('STOP')
                 start_robot = False
                 print('Stopping with command: ', cmd)
-
-            # cmds are published after the robot is started
+            if cmd[0] =='AGAIN' and start_robot:
+                
+                cmdString = ' '.join(map(str, prev_cmd))
+                print('Sending AGAIN Command to ROS: ', cmdString)
+                if ROS_ENABLED:
+                    pub.publish(cmdString)
+                    
+                    
+                    # cmds are published after the robot is started
             if start_robot and cmd is not None:
+                if cmd[0] !='AGAIN':
+                    prev_cmd = cmd
                 cmdString = ' '.join(map(str, cmd))
                 print('Sending Command to ROS: ', cmdString)
                 if ROS_ENABLED:
                     pub.publish(cmdString)
             cmd = None
+
         elif words != None:
             pub.publish('INVALID')
 
