@@ -54,7 +54,6 @@ try:
             # mode: step mode. Faster response time, because in the direction and distance mode, distance needs to be recognized.
             commandCreator.original_words = words
             cmd = commandCreator.getCommand(True)
-            prev_cmd = None
 
         if cmd is not None:
             #start_robot means start sending commands
