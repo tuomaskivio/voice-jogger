@@ -217,43 +217,47 @@ class RobotMover(object):
     def give_object(self, position):
         # Give object from a saved position
 
-        #if position in self.saved_positions.keys():
-            grasp = self.saved_positions[position]
-            pre_grasp = grasp
-            pre_grasp.position.y += 0.1
-            target_pos = self.saved_positions["Target"]
-            pre_target = target_pos
-            pre_target.position.y += 0.1
+        if position in self.saved_positions.keys():
+            grasp = copy.deepcopy(self.saved_positions[position])
+            pre_grasp = copy.deepcopy(grasp)
+            pre_grasp.position.y += 0.15
+            target_pos = copy.deepcopy(self.saved_positions["Target"])
+            pre_target = copy.deepcopy(target_pos)
+            pre_target.position.y += 0.15
 
             # Grasp object
 
             waypoints = []
-            #waypoints.append(copy.deepcopy(pre_grasp))
-            waypoints.append(copy.deepcopy(grasp))
+            waypoints.append(pre_grasp)
+            waypoints.append(grasp)
+            self.open_gripper()
             (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # jump_threshold
             plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan,
                                                      velocity_scaling_factor=velocities[self.velocity])
             self.move_group.execute(plan, wait=True)
-            #self.move_robot_to_position(grasp)
             self.close_gripper()
 
             waypoints2 = []
-            #waypoints2.append(copy.deepcopy(pre_target))
-            waypoints2.append(copy.deepcopy(target_pos))
+            waypoints2.append(pre_target)
+            waypoints2.append(target_pos)
+
             (plan, fraction) = self.move_group.compute_cartesian_path(waypoints2, 0.01, 0.0)  # jump_threshold
             plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan,
                                                      velocity_scaling_factor=velocities[self.velocity])
             self.move_group.execute(plan, wait=True)
-            #self.move_robot_to_position(target_pos)
             self.open_gripper()
+
+            (plan, fraction) = self.move_group.compute_cartesian_path([pre_target], 0.01, 0.0)  # jump_threshold
+            plan = self.move_group.retime_trajectory(self.move_group.get_current_state(), plan,
+                                                     velocity_scaling_factor=velocities[self.velocity])
+
+            self.move_group.execute(plan, wait=True)
 
             print("Object given")
 
-       # else:
-           # rospy.loginfo("Position " + position + " not saved.")
+        else:
+            rospy.loginfo("Position " + position + " not saved.")
 
-        # Muuta 100m ros koordinaateiksi, kutsu robotmoveri liikuttamaan pre-graspiin, sitten graspiin, sulkemaan gripperin
-        #viemään pre-placeen ja lopulta placeen. Tee tutkinta onko position ja place annettu.
 
 
     def robot_stop(self):
