@@ -255,11 +255,10 @@ class RobotMover(object):
         approach_target = copy.deepcopy(target)
         approach_target.position.z += self.pickup_approach_height
         # Pick up tool
-        waypoints = []
-        waypoints.append(approach_target)
-        waypoints.append(target)
-        self.open_gripper()
-        self.move_robot(waypoints)
+        self.open_gripper(wait=False) # Start opening gripper while moving
+        self.move_robot([approach_target])
+        self.open_gripper(wait=True) # Verify gripper is open before moving to target
+        self.move_robot([target])
         self.close_gripper()
         # Drop tool
         target2 = copy.deepcopy(self.saved_positions["CORNER2"])
@@ -296,11 +295,10 @@ class RobotMover(object):
             target.position.z = self.saved_positions[name].position.z
 
         # Go to pickup point
-        waypoints = []
-        waypoints.append(approach_target)
-        waypoints.append(target)
-        self.open_gripper()
-        self.move_robot(waypoints)
+        self.open_gripper(wait=False) # Start opening gripper while moving
+        self.move_robot([approach_target])
+        self.open_gripper(wait=True) # Verify gripper is open before moving to target
+        self.move_robot([target])
         # Pick tool
         self.close_gripper()
         # Move up
