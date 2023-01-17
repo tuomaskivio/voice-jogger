@@ -17,7 +17,7 @@ def write_task(data):
 	# Convert data-dict to JSON
 	dataJSON = json.dumps(data, indent=4)
 
-	# Open file. "w" - overwrite any existing content
+	# Open file. "w" - overwrite any epositionsxisting content
 	textfile = open("tasks.txt", "w")
 	# Write to the file
 	textfile.write(dataJSON)
@@ -59,6 +59,26 @@ def load_position():
 	for posename in data:
 		pose = message_converter.convert_dictionary_to_ros_message('geometry_msgs/Pose', data[posename])
 		data[posename] = pose
+	return data
+
+def write_object(data):
+	for posename in data:
+		pose = message_converter.convert_ros_message_to_dictionary(data[posename][0])
+		data[posename] = [pose, data[posename][1]]
+		
+	dataJSON = json.dumps(data, indent=4)
+	textfile = open("objects.txt", "w")
+	textfile.write(dataJSON)
+	
+	
+def load_object():
+	textfile = open("objects.txt", "r")
+	dataJSON = textfile.read()
+	data = json.loads(dataJSON)
+	
+	for posename in data:
+		pose = message_converter.convert_dictionary_to_ros_message('geometry_msgs/Pose', data[posename][0])
+		data[posename] = [pose, int(data[posename][1])]
 	return data
 	
 

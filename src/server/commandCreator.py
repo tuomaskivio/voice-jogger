@@ -265,8 +265,15 @@ class CommandCreator(object):
                 else:
                     print('Invalid ' + command + ' command. Correct form: SAVE CORNER [1/2]')
                     return None
+            elif cmd == 'TOOL':
+                tool_name = self.get_name(words)
+                if tool_name is not None:
+                    return ['SAVE', 'TOOL', tool_name]
+                else:
+                    print('Invalid ' + command + ' command. Correct form: SAVE TOOL [tool name]')
+                    return None
             else:
-                print('Invalid ' + command + ' command. Correct form: SAVE POSITION/SPOT [position name]')
+                print('Invalid ' + command + ' command. Correct form: SAVE TOOL [tool name]')
                 return None
 
         #___________________MOVE TO POSITION___________________________

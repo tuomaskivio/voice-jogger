@@ -114,6 +114,7 @@ class RobotMover(object):
         self.recording_task_name = None
         self.saved_positions = tfh.load_position()
         self.saved_tasks = tfh.load_task()
+        self.saved_objects = tfh.load_object()
         self.velocity = Velocity.MEDIUM
         self.waiting_for_tool_name = False
         self.current_tool = None
@@ -247,12 +248,17 @@ class RobotMover(object):
             return
 
         # If there isn't saved position, dont't do nothing but inform user
-        if name not in self.saved_positions.keys():
-            rospy.loginfo("Position " + name + " not saved.")
+        if name not in self.saved_objects.keys():
+            rospy.loginfo("Object " + name + " not saved.")
             self.shake_gripper()
             return
 
-        target = copy.deepcopy(self.saved_positions[name])
+        if not self.saved_objects[name][1]:
+            rospy.loginfo("Object " + name + " not in place.")
+            self.shake_gripper()
+            return
+
+        target = copy.deepcopy(self.saved_objects[name][0])
         approach_target = copy.deepcopy(target)
         approach_target.position.z += self.pickup_approach_height
         # Pick up tool
@@ -267,7 +273,7 @@ class RobotMover(object):
         target2.position.y -= self.pickup_area_offset
         approach_target2 = copy.deepcopy(target2)
         approach_target2.position.z += self.pickup_approach_height
-        target2.position.z = self.saved_positions[name].position.z
+        target2.position.z = self.saved_objects[name][0].position.z
         waypoints = []
         waypoints.append(approach_target)
         waypoints.append(approach_target2)
@@ -277,6 +283,8 @@ class RobotMover(object):
         # Move up
         self.move_robot([approach_target2])
 
+        self.change_object_status(name, 0)
+
     def drop_tool(self, name):
         if "DROP" not in self.saved_positions.keys():
             rospy.loginfo("Drop position not saved")
@@ -284,12 +292,17 @@ class RobotMover(object):
             return
 
         # If there isn't saved position, dont't do nothing but inform user
-        if name not in self.saved_positions.keys():
-            rospy.loginfo("Position " + name + " not saved.")
+        if name not in self.saved_objects.keys():
+            rospy.loginfo("Object " + name + " not saved.")
             self.shake_gripper()
             return
 
-        target = copy.deepcopy(self.saved_positions[name])
+        if not self.saved_objects[name][1]:
+            rospy.loginfo("Object " + name + " not in place.")
+            self.shake_gripper()
+            return
+
+        target = copy.deepcopy(self.saved_objects[name][0])
         approach_target = copy.deepcopy(target)
         approach_target.position.z += self.pickup_approach_height
         # Pick up tool
@@ -306,15 +319,21 @@ class RobotMover(object):
         self.move_robot(waypoints)
         self.open_gripper()
 
-    def drop_all(self):
-        for tool in self.saved_positions.keys():
-            if (tool != "CORNER1" and tool != "CORNER2" and tool != "DROP"):
-                self.drop_tool(tool)
+        self.change_object_status(name, 0)
 
+    def drop_all(self):
+        for tool in self.saved_objects.keys():
+            if (self.saved_objects[tool][1]):
+                self.drop_tool(tool)
 
     def pickup_tool(self, name=""):
         if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
             rospy.loginfo("Corners not saved")
+            self.shake_gripper()
+            return
+
+        if name != "" and self.saved_objects[name][1]:
+            rospy.loginfo("Object " + name + " is already in place.")
             self.shake_gripper()
             return
 
@@ -327,7 +346,7 @@ class RobotMover(object):
         if name == "":
             target.position.z += self.default_pickup_height
         else:
-            target.position.z = self.saved_positions[name].position.z
+            target.position.z = self.saved_objects[name][0].position.z
 
         # Go to pickup point
         self.open_gripper(wait=False) # Start opening gripper while moving
@@ -343,7 +362,7 @@ class RobotMover(object):
             self.move_robot(waypoints)
             self.waiting_for_tool_name = True
         else:
-            target2 = copy.deepcopy(self.saved_positions[name])
+            target2 = copy.deepcopy(self.saved_objects[name][0])
             approach_target2 = copy.deepcopy(target2)
             approach_target2.position.z = approach_target.position.z
             waypoints.append(approach_target2)
@@ -351,6 +370,9 @@ class RobotMover(object):
             self.move_robot(waypoints)
             self.open_gripper()
             self.move_robot([approach_target2])
+
+            self.change_object_status(name, 1)
+
         self.current_tool = None
 
         
@@ -377,12 +399,12 @@ class RobotMover(object):
                     return
         target.position.z = self.saved_positions["CORNER1"].position.z + self.default_pickup_height
         # Save tool position
-        if name in self.saved_positions.keys():
-            rospy.loginfo("There was already a stored position with the name %s so it was overwritten", name)
-        self.saved_positions[name] = copy.deepcopy(target)
-        tfh.write_position(self.saved_positions)
-        self.saved_positions = tfh.load_position()
-        print("Position " + name + " saved.")
+        if name in self.saved_objects.keys():
+            rospy.loginfo("There was already a stored object with the name %s so it was overwritten", name)
+        self.saved_objects[name] = [copy.deepcopy(target), 1]
+        tfh.write_object(self.saved_objects)
+        self.saved_objects = tfh.load_object()
+        print("Object " + name + " saved.")
         self.waiting_for_tool_name = False
 
         waypoints = []
@@ -396,25 +418,28 @@ class RobotMover(object):
 
 
     def is_free(self, target):
-        for position in self.saved_positions.keys():
-            if position == "CORNER1":
-                continue
-            position = self.saved_positions[position].position
-            # Don't check for saved positions above the table
-            if position.z > self.saved_positions["CORNER1"].position.z + self.object_size:
-                continue
-            if position == "CORNER2":
-                if position.x - self.pickup_area_offset > target.x - self.object_size and \
-                   position.x - self.pickup_area_offset < target.x + self.object_size and \
-                   position.y - self.pickup_area_offset > target.y - self.object_size and \
-                   position.y - self.pickup_area_offset < target.y + self.object_size:
-                    return False
-            elif position.x > target.x - self.object_size and \
+        for position in self.saved_objects.keys():
+            position = self.saved_objects[position][0].position
+            
+            if position.x > target.x - self.object_size and \
                position.x < target.x + self.object_size and \
                position.y > target.y - self.object_size and \
                position.y < target.y + self.object_size:
                 return False
+        
+        # Check pickup area
+        position = self.saved_positions["CORNER2"].position
+        if position.x - self.pickup_area_offset > target.x - self.object_size and \
+           position.x - self.pickup_area_offset < target.x + self.object_size and \
+           position.y - self.pickup_area_offset > target.y - self.object_size and \
+           position.y - self.pickup_area_offset < target.y + self.object_size:
+            return False
         return True
+
+    def change_object_status(self, name, status):
+        self.saved_objects[name][1] = status
+        tfh.write_object(self.saved_objects)
+        self.saved_objects = tfh.load_object()
 
     def robot_stop(self):
         # Replace current trajectory with stopping trajectory
@@ -496,10 +521,10 @@ class RobotMover(object):
                 self.saved_tasks = tfh.load_task()
 
                 self.recording_task_name = None
-            elif cmd[0] == "RECORD":
-                pass
-            else:
-                self.saved_tasks[self.recording_task_name]["moves"].append(cmd)
+            #elif cmd[0] == "RECORD":
+            #    pass
+            #else:
+                #self.saved_tasks[self.recording_task_name]["moves"].append(cmd)
 
         #________________STATUS COMMANDS_________________________
         if cmd[0] == 'START':
@@ -681,6 +706,26 @@ class RobotMover(object):
                 print("Position " + cmd[2] + " removed.")
             else:
                 rospy.loginfo("Not enough arguments, expected REMOVE POSITION [position name]")
+                self.shake_gripper()
+
+        #________________SAVE TOOL POSITION_____________________
+        elif cmd[0] == 'SAVE' and cmd[1] == 'TOOL':
+            if cmd[2] in self.saved_objects.keys():
+                rospy.loginfo("There was already a stored tool with the name %s so it was overwritten", cmd[2])
+            self.saved_objects[cmd[2]] = [self.move_group.get_current_pose().pose, 1]
+            tfh.write_object(self.saved_objects)
+            self.saved_objects = tfh.load_object()
+            print("Tool " + cmd[2] + " saved.")
+            
+            
+        #_______________REMOVE TOOL POSITION____________________
+        elif cmd[0] == 'REMOVE' and cmd[1] == 'TOOL':
+            if cmd[2] in self.saved_objects.keys():
+                tfh.deleteItem('objects.txt', cmd[2])
+                self.saved_objects = tfh.load_object()
+                print("Tool " + cmd[2] + " removed.")
+            else:
+                rospy.loginfo("Not enough arguments, expected REMOVE TOOL [tool name]")
                 self.shake_gripper()
 
         #_______________ TAKE TOOL__________________________
