@@ -96,10 +96,10 @@ class RobotMover(object):
                                         queue_size = 10)
 
         # class constants
-        self.pickup_area_offset = 0.1
+        self.pickup_area_offset = 0.05
         self.pickup_approach_height = 0.15
-        self.default_pickup_height = 0.02
-        self.object_size = 0.05
+        self.default_pickup_height = 0.01
+        self.object_size = 0.1
         self.home = [0, -0.785, 0, -2.356, 0, 1.571, 0.785]
 
         # class variables
@@ -116,6 +116,7 @@ class RobotMover(object):
         self.saved_tasks = tfh.load_task()
         self.velocity = Velocity.MEDIUM
         self.waiting_for_tool_name = False
+        self.current_tool = None
         
         
     def move_gripper_home(self):
@@ -316,6 +317,7 @@ class RobotMover(object):
             self.move_robot(waypoints)
             self.open_gripper()
             self.move_robot([approach_target2])
+        self.current_tool = None
 
         
     def save_tool(self, name):
@@ -325,14 +327,14 @@ class RobotMover(object):
             return
 
         orig_target = copy.deepcopy(self.saved_positions["CORNER1"])
-        orig_target.position.x += self.object_size
-        orig_target.position.y += self.object_size
+        orig_target.position.x += 0.01
+        orig_target.position.y += 0.01
         target = copy.deepcopy(orig_target)
         while not self.is_free(target.position):
-            target.position.x += self.object_size * 2
+            target.position.x += 0.01
             if target.position.x + self.object_size > self.saved_positions["CORNER2"].position.x:
                 target.position.x = orig_target.position.x
-                target.position.y += self.object_size * 2
+                target.position.y += 0.01
                 if target.position.y + self.object_size > self.saved_positions["CORNER2"].position.y:
                     rospy.loginfo("Table is full")
                     self.shake_gripper()
@@ -367,7 +369,13 @@ class RobotMover(object):
             # Don't check for saved positions above the table
             if position.z > self.saved_positions["CORNER1"].position.z + self.object_size:
                 continue
-            if position.x > target.x - self.object_size and \
+            if position == "CORNER2":
+                if position.x - self.pickup_area_offset > target.x - self.object_size and \
+                   position.x - self.pickup_area_offset < target.x + self.object_size and \
+                   position.y - self.pickup_area_offset > target.y - self.object_size and \
+                   position.y - self.pickup_area_offset < target.y + self.object_size:
+                    return False
+            elif position.x > target.x - self.object_size and \
                position.x < target.x + self.object_size and \
                position.y > target.y - self.object_size and \
                position.y < target.y + self.object_size:
@@ -413,7 +421,7 @@ class RobotMover(object):
 
     def shake_gripper(self):
         if self.stopped:
-            return
+            return            
         joint_goal = self.move_group.get_current_joint_values()
         step_size = 0.1
         # Joit 7 limits. max: 2.8973, min: -2.8973
@@ -659,10 +667,19 @@ class RobotMover(object):
                 rospy.loginfo("Not enough arguments, expected TAKE [tool name] or TAKE NEW TOOL")
                 self.shake_gripper()
 
+        elif cmd[0] == 'RETURN':
+            if not self.current_tool:
+                rospy.loginfo("No current tool to return")
+                self.shake_gripper()
+            else:
+                self.pickup_tool(self.current_tool)
+
+
         #___________________GIVE TOOL____________________________
         elif cmd[0] == 'GIVE':
             if len(cmd) > 1:
                 self.give_tool(cmd[1])
+                self.current_tool = cmd[1]
             else:
                 rospy.loginfo("Not enough arguments, expected GIVE [tool name]")
                 self.shake_gripper()
