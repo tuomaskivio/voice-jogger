@@ -277,6 +277,40 @@ class RobotMover(object):
         # Move up
         self.move_robot([approach_target2])
 
+    def drop_tool(self, name):
+        if "DROP" not in self.saved_positions.keys():
+            rospy.loginfo("Drop position not saved")
+            self.shake_gripper()
+            return
+
+        # If there isn't saved position, dont't do nothing but inform user
+        if name not in self.saved_positions.keys():
+            rospy.loginfo("Position " + name + " not saved.")
+            self.shake_gripper()
+            return
+
+        target = copy.deepcopy(self.saved_positions[name])
+        approach_target = copy.deepcopy(target)
+        approach_target.position.z += self.pickup_approach_height
+        # Pick up tool
+        self.open_gripper(wait=False) # Start opening gripper while moving
+        self.move_robot([approach_target])
+        self.open_gripper(wait=True) # Verify gripper is open before moving to target
+        self.move_robot([target])
+        self.close_gripper()
+        # Drop tool
+        drop_target = copy.deepcopy(self.saved_positions["DROP"])
+        waypoints = []
+        waypoints.append(approach_target)
+        waypoints.append(drop_target)
+        self.move_robot(waypoints)
+        self.open_gripper()
+
+    def drop_all(self):
+        for tool in self.saved_positions.keys():
+            if (tool != "CORNER1" and tool != "CORNER2" and tool != "DROP"):
+                self.drop_tool(tool)
+
 
     def pickup_tool(self, name=""):
         if "CORNER1" not in self.saved_positions.keys() or "CORNER2" not in self.saved_positions.keys():
@@ -680,6 +714,17 @@ class RobotMover(object):
             if len(cmd) > 1:
                 self.give_tool(cmd[1])
                 self.current_tool = cmd[1]
+            else:
+                rospy.loginfo("Not enough arguments, expected GIVE [tool name]")
+                self.shake_gripper()
+
+        #___________________DROP TOOL____________________________
+        elif cmd[0] == 'DROP':
+            if len(cmd) > 1:
+                if cmd[1] == 'ALL':
+                    self.drop_all()
+                else:
+                    self.drop_tool(cmd[1])
             else:
                 rospy.loginfo("Not enough arguments, expected GIVE [tool name]")
                 self.shake_gripper()

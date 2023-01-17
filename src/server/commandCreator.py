@@ -75,7 +75,8 @@ class CommandCreator(object):
             'take' : 'TAKE',
             'give' : 'GIVE',
             'name' : 'NAME',
-            'return' : 'RETURN'
+            'return' : 'RETURN',
+            'drop' : 'DROP'
         }
 
 
@@ -297,7 +298,21 @@ class CommandCreator(object):
         #___________________GIVE TOOL_________________________
         elif command == "GIVE":
             tool = self.get_name(words)
-            return ["GIVE", tool]
+            if tool != None:
+                return ["GIVE", tool]
+            else:
+                print('Invalid ' + command + ' command. Correct form: GIVE [tool name]')
+                return None                
+
+
+        #___________________DROP TOOL_________________________
+        elif command == "DROP":
+            tool = self.get_name(words)
+            if tool != None:
+                return ["DROP", tool]
+            else:
+                print('Invalid ' + command + ' command. Correct form: DROP [tool name]')
+                return None
 
 
         elif type(command) == str:
