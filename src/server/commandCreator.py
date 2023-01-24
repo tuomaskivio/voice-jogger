@@ -4,6 +4,7 @@
 import copy
 from word2number import w2n
 
+
 class CommandCreator(object):
     def __init__(self, debug_enabled = False):
         self.debug_enabled = debug_enabled
@@ -76,7 +77,9 @@ class CommandCreator(object):
             'give' : 'GIVE',
             'name' : 'NAME',
             'return' : 'RETURN',
-            'drop' : 'DROP'
+            'drop' : 'DROP',
+            'and' : 'AND',
+            'then' : 'THEN'
         }
 
 
@@ -140,7 +143,7 @@ class CommandCreator(object):
 
         # Take a new word from the words-list until word is found from all_words_lookup_table
         if len(words) > 0:
-            command =  self.all_words_lookup_table.get(words.pop(0))
+            command = self.all_words_lookup_table.get(words.pop(0))
         else:
             return None
 
@@ -507,3 +510,16 @@ class CommandCreator(object):
         except Exception as e:
             print('Invalid tool command. ', e)
             return None
+
+    def check_if_chained(self, words):
+        # Checks if there is chaining command AND or THEN and which one it is
+        is_and = False
+        is_end_of_and = True
+        for i in range(len(words)):
+            if self.all_words_lookup_table.get(words[i]) == "AND" or self.all_words_lookup_table.get(words[i]) == "THEN":
+                if self.all_words_lookup_table.get(words[i]) == "AND":
+                    is_and = True
+                    is_end_of_and = False
+
+                return words[i+1:], is_and, is_end_of_and
+        return None, is_and, is_end_of_and

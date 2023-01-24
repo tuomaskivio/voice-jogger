@@ -32,7 +32,7 @@ class Recognizer:
         self.rec = vosk.KaldiRecognizer(model, self.rate, json.dumps([
         # System commands
         "start", "stop", "panda", "robot", "recover", "move", "go", "mode", "distance", "direction", "step", "low", "medium", "high", "size", "tool", "open", "close", "grasp", "rotate",
-        "list", "show", "task", "play", "do", "remove", "delete", "save", "home", "finish", "record", "gripper", "position", "spot", "other", "opposite", "counter","corner", "speed", "velocity",
+        "list", "show", "task", "play", "do", "remove", "delete", "save", "home", "finish", "record", "gripper", "position", "spot", "other", "opposite", "counter", "and", "then","corner", "speed", "velocity",
         "take", "give", "new", "name", "return","drop","all",
         # Directions
         "up", "down", "left", "right", "forward", "backward", "front", "back",
