@@ -44,6 +44,7 @@ class Server:
             cmd = None
             self.start_robot = False
             self.is_chain_going = False
+            self.previous_and = False
             try:
 
                 while True:
@@ -65,12 +66,13 @@ class Server:
 
                     if cmd is not None:
                         #check if there will be another command
-                        next_words, is_and = self.commandCreator.check_if_chained(words)
+                        next_words, is_and, is_end_of_and = self.commandCreator.check_if_chained(words)
                         if next_words is not None:
                             chained_command = True
                             try:
                                 cmd.append(is_and)
-                                cmd.append(False)
+                                cmd.append(is_end_of_and)
+                                self.previous_and = is_and
                             except:
                                 pass
 
@@ -98,6 +100,7 @@ class Server:
                             if ROS_ENABLED:
                                 self.pub.publish(cmdString)
                             if chained_command:
+                                # A new command execution and chaining check
                                 self.__check_chained__(next_words)
                         cmd = None
 
@@ -116,12 +119,19 @@ class Server:
         chained_command = False
         self.commandCreator.original_words = words
         cmd = self.commandCreator.getCommand(True)
-        next_words, is_and = self.commandCreator.check_if_chained(words)
+        # Get next command words if there is chain word (otherwise None), is chain word AND and
+        # is this end of AND command chain.
+        next_words, is_and, is_end_of_and = self.commandCreator.check_if_chained(words)
         if next_words is not None:
             chained_command = True
             try:
-                cmd.append(is_and)
-                cmd.append(False)
+                # Check if there was AND before this command
+                if self.previous_and:
+                    cmd.append(True)
+                else:
+                    cmd.append(is_and)
+                cmd.append(is_end_of_and)
+                self.previous_and = is_and
             except:
                 pass
 
@@ -156,6 +166,7 @@ class Server:
                 if ROS_ENABLED:
                     self.pub.publish(cmdString)
             if chained_command:
+                # A new command execution and chaining check
                 self.__check_chained__(next_words)
 
 

@@ -424,17 +424,14 @@ class CommandCreator(object):
             return None
 
     def check_if_chained(self, words):
+        # Checks if there is chaining command AND or THEN and which one it is
         is_and = False
         is_end_of_and = True
         for i in range(len(words)):
             if self.all_words_lookup_table.get(words[i]) == "AND" or self.all_words_lookup_table.get(words[i]) == "THEN":
                 if self.all_words_lookup_table.get(words[i]) == "AND":
                     is_and = True
+                    is_end_of_and = False
 
-                """if len(words) > i + 1:
-                    for j in range(i + 1, len(words)):
-                        if self.all_words_lookup_table.get(words[j]) == "AND":
-                            is_end_of_and = False"""
-
-                return words[i+1:], is_and
-        return None, False
+                return words[i+1:], is_and, is_end_of_and
+        return None, is_and, is_end_of_and
