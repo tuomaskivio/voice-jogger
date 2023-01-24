@@ -336,6 +336,7 @@ class CommandCreator(object):
             return allwords
 
     def get_name(self, words):
+        words = self.words_before_chain(words)
         # no name
         if len(words) < 1:
             return None
@@ -523,3 +524,9 @@ class CommandCreator(object):
 
                 return words[i+1:], is_and, is_end_of_and
         return None, is_and, is_end_of_and
+
+    def words_before_chain(self, words):
+        for i in range(len(words)):
+            if self.all_words_lookup_table.get(words[i]) == "AND" or self.all_words_lookup_table.get(words[i]) == "THEN":
+                return words[:i]
+        return words

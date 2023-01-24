@@ -33,7 +33,7 @@ class Recognizer:
         # System commands
         "start", "stop", "panda", "robot", "recover", "move", "go", "mode", "distance", "direction", "step", "low", "medium", "high", "size", "tool", "open", "close", "grasp", "rotate",
         "list", "show", "task", "play", "do", "remove", "delete", "save", "home", "finish", "record", "gripper", "position", "spot", "other", "opposite", "counter", "and", "then","corner", "speed", "velocity",
-        "take", "give", "new", "name", "return","drop","all",
+        "take", "give", "new", "name", "return","drop","all","man",
         # Directions
         "up", "down", "left", "right", "forward", "backward", "front", "back",
         # numbers

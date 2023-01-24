@@ -99,7 +99,7 @@ class RobotMover(object):
         self.pickup_area_offset = 0.05
         self.pickup_approach_height = 0.15
         self.default_pickup_height = 0.01
-        self.object_size = 0.1
+        self.object_size = 0.07
         self.home = [0, -0.785, 0, -2.356, 0, 1.571, 0.785]
 
         # class variables
@@ -516,6 +516,7 @@ class RobotMover(object):
         rospy.loginfo("Started")
 
     def shake_gripper(self):
+        return
         if self.stopped:
             return            
         joint_goal = self.move_group.get_current_joint_values()
@@ -598,7 +599,7 @@ class RobotMover(object):
             self.robot_start()
         elif cmd[0] == 'RECOVER':
             self.error_recovery()
-            
+
         #________________MOVE COMMANDS___________________________
         elif cmd[0] == "HOME":
             self.move_robot_home()

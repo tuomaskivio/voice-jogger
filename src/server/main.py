@@ -102,7 +102,9 @@ class Server:
                             if chained_command:
                                 # A new command execution and chaining check
                                 self.__check_chained__(next_words)
-                        cmd = None
+                    elif words != None:
+                        self.pub.publish('INVALID')
+                    cmd = None
 
             except Exception as e:
                 print('Exception', e)
@@ -173,20 +175,6 @@ class Server:
             if chained_command:
                 # A new command execution and chaining check
                 self.__check_chained__(next_words)
-            cmd = None
-        elif words != None:
-            self.pub.publish('INVALID')
-
-except Exception as e:
-    print('Exception', e)
-finally:
-    print('Shutting down...')
-    print('Closing UDP thread')
-    udp.close_thread = True
-    udp.join()
-    print('Clearing queue')
-    while not q.empty():
-        q.get()
 
 
 
