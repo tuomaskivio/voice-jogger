@@ -45,6 +45,7 @@ class Server:
             self.start_robot = False
             self.is_chain_going = False
             self.previous_and = False
+            self.prev_cmd = None
             try:
 
                 while True:
@@ -92,16 +93,23 @@ class Server:
                                 self.pub_priority.publish('STOP')
                             self.start_robot = False
                             print('Stopping with command: ', cmd)
-
-                        # cmds are published after the robot is started
-                        if self.start_robot and cmd is not None:
-                            cmdString = ' '.join(map(str, cmd))
-                            print('Sending Command to ROS: ', cmdString)
+                        if cmd[0] =='AGAIN' and start_robot:
+                            cmdString = ' '.join(map(str, prev_cmd))
+                            print('Sending AGAIN Command to ROS: ', cmdString)
                             if ROS_ENABLED:
                                 self.pub.publish(cmdString)
-                            if chained_command:
-                                # A new command execution and chaining check
-                                self.__check_chained__(next_words)
+
+                        # cmds are published after the robot is started
+                        if self.start_robot and cmd is not None:                
+                            if cmd[0] !='AGAIN':
+                                self.prev_cmd = cmd
+                                cmdString = ' '.join(map(str, cmd))
+                                print('Sending Command to ROS: ', cmdString)
+                                if ROS_ENABLED:
+                                    self.pub.publish(cmdString)
+                                if chained_command:
+                                    # A new command execution and chaining check
+                                    self.__check_chained__(next_words)
                     elif words != None:
                         self.pub.publish('INVALID')
                     cmd = None
