@@ -137,8 +137,10 @@ class RobotMover(object):
 
             if not is_end_of_and:
                 return
+
         else:
             # Calculate a new goal pose
+
             if direction == "up":
                 robot_pose.position.z += stepSize
             if direction == "down":
@@ -154,6 +156,7 @@ class RobotMover(object):
 
             waypoint = copy.deepcopy(robot_pose)
             waypoints.append(waypoint)
+
 
             if is_and and len(self.updating_waypoint) == 0:
                 self.updating_waypoint.append(waypoint)
