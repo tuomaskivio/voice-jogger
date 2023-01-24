@@ -158,7 +158,7 @@ class RobotMover(object):
             waypoints.append(waypoint)
 
 
-            if is_and and len(self.updating_waypoint) == 0:
+            if is_and:
                 self.updating_waypoint.append(waypoint)
                 if not is_end_of_and:
                     return

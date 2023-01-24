@@ -67,7 +67,7 @@ class Server:
                     if cmd is not None:
                         #check if there will be another command
                         next_words, is_and, is_end_of_and = self.commandCreator.check_if_chained(words)
-                        if next_words is not None:
+                        if next_words is not None and len(next_words) != 0:
                             chained_command = True
                             try:
                                 cmd.append(is_and)
@@ -122,7 +122,7 @@ class Server:
         # Get next command words if there is chain word (otherwise None), is chain word AND and
         # is this end of AND command chain.
         next_words, is_and, is_end_of_and = self.commandCreator.check_if_chained(words)
-        if next_words is not None:
+        if next_words is not None and len(next_words) != 0:
             chained_command = True
             try:
                 # Check if there was AND before this command
@@ -136,8 +136,13 @@ class Server:
                 pass
 
         else:
-            cmd.append(True)
-            cmd.append(True)
+            # If there was AND word before command, tell forward that this is part of ANd chain and end of it
+            if self.previous_and:
+                cmd.append(True)
+                cmd.append(True)
+            else:
+                cmd.append(False)
+                cmd.append(True)
 
         if cmd is not None:
 
