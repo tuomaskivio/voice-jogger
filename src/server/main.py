@@ -93,8 +93,9 @@ class Server:
                                 self.pub_priority.publish('STOP')
                             self.start_robot = False
                             print('Stopping with command: ', cmd)
-                        if cmd[0] =='AGAIN' and start_robot:
-                            cmdString = ' '.join(map(str, prev_cmd))
+
+                        elif cmd[0] =='AGAIN' and self.start_robot:
+                            cmdString = ' '.join(map(str, self.prev_cmd))
                             print('Sending AGAIN Command to ROS: ', cmdString)
                             if ROS_ENABLED:
                                 self.pub.publish(cmdString)
